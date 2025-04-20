@@ -1,0 +1,109 @@
+
+/* Kollect-It Appraiser Admin Styles */
+.kollect-it-admin-container {
+    max-width: 1200px;
+    margin: 20px;
+}
+
+.kollect-it-admin-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.kollect-it-admin-header h1 {
+    margin-right: 20px;
+}
+
+.kollect-it-admin-card {
+    background: white;
+    border: 1px solid #ccd0d4;
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04);
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.kollect-it-admin-form {
+    max-width: 600px;
+}
+
+.kollect-it-admin-form-row {
+    margin-bottom: 15px;
+}
+
+.kollect-it-admin-label {
+    display: block;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.kollect-it-admin-field {
+    width: 100%;
+}
+
+.kollect-it-admin-description {
+    font-style: italic;
+    color: #666;
+    margin-top: 5px;
+}
+
+.kollect-it-admin-notice {
+    background-color: #fff;
+    border-left: 4px solid #ddd;
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04);
+    margin: 10px 0 20px;
+    padding: 1px 12px;
+}
+
+.kollect-it-admin-notice-success {
+    border-left-color: #46b450;
+}
+
+.kollect-it-admin-notice-error {
+    border-left-color: #dc3232;
+}
+
+.kollect-it-admin-notice-warning {
+    border-left-color: #ffb900;
+}
+
+.kollect-it-admin-notice-info {
+    border-left-color: #00a0d2;
+}
+
+.kollect-it-shortcode-example {
+    background: #f5f5f5;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+    font-family: monospace;
+    margin: 10px 0;
+}
+
+.kollect-it-admin-table {
+    width: 100%;
+    border-spacing: 0;
+    border-collapse: separate;
+}
+
+.kollect-it-admin-table th {
+    text-align: left;
+    padding: 8px 10px;
+    border-bottom: 1px solid #e1e1e1;
+    font-weight: 600;
+}
+
+.kollect-it-admin-table td {
+    padding: 8px 10px;
+    border-bottom: 1px solid #f1f1f1;
+}
+
+.kollect-it-admin-table tr:hover td {
+    background-color: #f9f9f9;
+}
+
+.kollect-it-admin-table .thumbnail {
+    width: 60px;
+    height: 60px;
+    object-fit: cover;
+}

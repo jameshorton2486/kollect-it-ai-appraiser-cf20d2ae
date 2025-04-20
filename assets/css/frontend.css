@@ -1,0 +1,214 @@
+
+/* Kollect-It Appraiser Frontend Styles */
+.kollect-it-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+}
+
+.kollect-it-title {
+    font-size: 28px;
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 20px;
+    color: #1a1f2c;
+}
+
+.kollect-it-card {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.kollect-it-control-panel {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.kollect-it-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 16px;
+    background-color: #9b87f5;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.kollect-it-button:hover {
+    background-color: #7e69ab;
+}
+
+.kollect-it-button:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+}
+
+.kollect-it-button-outline {
+    background-color: transparent;
+    color: #1a1f2c;
+    border: 1px solid #d1d5db;
+}
+
+.kollect-it-button-outline:hover {
+    background-color: #f3f4f6;
+}
+
+.kollect-it-tabs {
+    display: flex;
+    border-bottom: 1px solid #e5e7eb;
+    margin-bottom: 20px;
+}
+
+.kollect-it-tab {
+    padding: 10px 20px;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+}
+
+.kollect-it-tab.active {
+    border-bottom-color: #9b87f5;
+    font-weight: 500;
+}
+
+.kollect-it-tab-content {
+    display: none;
+}
+
+.kollect-it-tab-content.active {
+    display: block;
+}
+
+.kollect-it-image-uploader {
+    border: 2px dashed #d1d5db;
+    border-radius: 8px;
+    padding: 40px;
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.kollect-it-image-uploader.dragging {
+    border-color: #9b87f5;
+    background-color: rgba(155, 135, 245, 0.05);
+}
+
+.kollect-it-image-preview {
+    max-height: 400px;
+    overflow: auto;
+    text-align: center;
+}
+
+.kollect-it-image-preview img {
+    max-width: 100%;
+    max-height: 400px;
+    object-fit: contain;
+}
+
+.kollect-it-form-group {
+    margin-bottom: 15px;
+}
+
+.kollect-it-label {
+    display: block;
+    font-weight: 500;
+    margin-bottom: 5px;
+}
+
+.kollect-it-select {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+    background-color: white;
+}
+
+.kollect-it-description {
+    font-size: 14px;
+    color: #6b7280;
+    margin-top: 5px;
+}
+
+.kollect-it-results {
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 20px;
+    max-height: 600px;
+    overflow: auto;
+}
+
+.kollect-it-progress {
+    height: 8px;
+    width: 100%;
+    background-color: #e5e7eb;
+    border-radius: 4px;
+    margin: 10px 0;
+    overflow: hidden;
+}
+
+.kollect-it-progress-bar {
+    height: 100%;
+    background-color: #9b87f5;
+    width: 0%;
+    transition: width 0.3s ease;
+}
+
+.kollect-it-spinner {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 3px solid rgba(155, 135, 245, 0.3);
+    border-radius: 50%;
+    border-top-color: #9b87f5;
+    animation: kollect-it-spin 1s linear infinite;
+    margin-right: 8px;
+}
+
+@keyframes kollect-it-spin {
+    to { transform: rotate(360deg); }
+}
+
+.kollect-it-error {
+    background-color: #fee2e2;
+    color: #b91c1c;
+    padding: 12px;
+    border-radius: 4px;
+    margin-bottom: 15px;
+}
+
+.kollect-it-success {
+    background-color: #dcfce7;
+    color: #15803d;
+    padding: 12px;
+    border-radius: 4px;
+    margin-bottom: 15px;
+}
+
+.kollect-it-notification {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    padding: 12px 20px;
+    background-color: #1a1f2c;
+    color: white;
+    border-radius: 4px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 1000;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.3s, transform 0.3s;
+}
+
+.kollect-it-notification.show {
+    opacity: 1;
+    transform: translateY(0);
+}
