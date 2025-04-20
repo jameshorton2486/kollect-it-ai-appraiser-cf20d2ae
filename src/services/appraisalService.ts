@@ -1,4 +1,3 @@
-
 import axios from 'axios';
 import { promptTemplates } from '@/data/promptTemplates';
 
@@ -10,6 +9,8 @@ export interface AppraisalResult {
     promptTokens?: number;
     completionTokens?: number;
     totalTokens?: number;
+    timestamp?: string;
+    templateId?: string;
   }
 }
 
@@ -63,14 +64,16 @@ export const generateAppraisal = async (
       }
     );
     
-    // Return the response with usage metadata if available
+    // Return the response with enhanced metadata
     return {
       appraisalText: response.data.choices[0].message.content,
       metadata: {
         model: model,
         promptTokens: response.data.usage?.prompt_tokens,
         completionTokens: response.data.usage?.completion_tokens,
-        totalTokens: response.data.usage?.total_tokens
+        totalTokens: response.data.usage?.total_tokens,
+        timestamp: new Date().toISOString(),
+        templateId: templateId
       }
     };
   } catch (error: any) {

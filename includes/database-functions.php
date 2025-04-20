@@ -21,7 +21,8 @@ function kollect_it_save_appraisal($data) {
         'post_title'   => wp_strip_all_tags($data['title']),
         'post_content' => wp_kses_post($data['appraisal_text']),
         'post_status'  => 'publish',
-        'post_type'    => 'expert_appraisal'
+        'post_type'    => 'expert_appraisal',
+        'post_author'  => get_current_user_id()
     );
 
     // Insert the post
@@ -30,9 +31,12 @@ function kollect_it_save_appraisal($data) {
         return $post_id;
     }
 
-    // Save additional meta data
+    // Save metadata
     update_post_meta($post_id, '_appraisal_description', sanitize_textarea_field($data['description']));
     update_post_meta($post_id, '_template_id', sanitize_text_field($data['template_id']));
+    update_post_meta($post_id, '_model', sanitize_text_field($data['metadata']['model'] ?? ''));
+    update_post_meta($post_id, '_tokens_used', absint($data['metadata']['totalTokens'] ?? 0));
+    update_post_meta($post_id, '_generated_at', sanitize_text_field($data['metadata']['timestamp'] ?? ''));
     
     if (!empty($data['image_url'])) {
         update_post_meta($post_id, '_image_url', esc_url_raw($data['image_url']));
@@ -60,7 +64,12 @@ function kollect_it_get_appraisal($id) {
         'template_id' => get_post_meta($post->ID, '_template_id', true),
         'image_url' => get_post_meta($post->ID, '_image_url', true),
         'appraisal_text' => $post->post_content,
-        'created_at' => $post->post_date
+        'created_at' => $post->post_date,
+        'metadata' => array(
+            'model' => get_post_meta($post->ID, '_model', true),
+            'tokens_used' => get_post_meta($post->ID, '_tokens_used', true),
+            'generated_at' => get_post_meta($post->ID, '_generated_at', true)
+        )
     );
 }
 
