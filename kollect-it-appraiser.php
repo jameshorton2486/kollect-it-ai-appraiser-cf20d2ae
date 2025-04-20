@@ -1,4 +1,3 @@
-
 <?php
 /**
  * Plugin Name: Kollect-It Appraiser
@@ -24,6 +23,7 @@ require_once KOLLECT_IT_PLUGIN_DIR . 'includes/class-kollect-it-appraiser.php';
 require_once KOLLECT_IT_PLUGIN_DIR . 'includes/class-kollect-it-appraisal-cpt.php';
 require_once KOLLECT_IT_PLUGIN_DIR . 'includes/class-kollect-it-settings.php';
 require_once KOLLECT_IT_PLUGIN_DIR . 'includes/class-kollect-it-shortcode.php';
+require_once KOLLECT_IT_PLUGIN_DIR . 'includes/database-functions.php';
 
 // Initialize the plugin
 function kollect_it_initialize() {
