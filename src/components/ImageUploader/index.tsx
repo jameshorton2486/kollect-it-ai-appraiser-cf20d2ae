@@ -7,9 +7,10 @@ import { showNotification } from "@/utils/notifications";
 
 interface ImageUploaderProps {
   onImageSelect: (imageData: string) => void;
+  onAppraisalComplete?: (result: string) => void;
 }
 
-export const ImageUploader = ({ onImageSelect }: ImageUploaderProps) => {
+export const ImageUploader = ({ onImageSelect, onAppraisalComplete }: ImageUploaderProps) => {
   const [isDragging, setIsDragging] = useState(false);
 
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
@@ -35,6 +36,10 @@ export const ImageUploader = ({ onImageSelect }: ImageUploaderProps) => {
         const result = reader.result as string;
         onImageSelect(result);
         showNotification("Image uploaded successfully", "success");
+        // Notify about completion if callback exists
+        if (onAppraisalComplete) {
+          onAppraisalComplete("Image processed successfully");
+        }
       };
       reader.readAsDataURL(imageFile);
     }
@@ -48,6 +53,10 @@ export const ImageUploader = ({ onImageSelect }: ImageUploaderProps) => {
         const result = reader.result as string;
         onImageSelect(result);
         showNotification("Image uploaded successfully", "success");
+        // Notify about completion if callback exists
+        if (onAppraisalComplete) {
+          onAppraisalComplete("Image processed successfully");
+        }
       };
       reader.readAsDataURL(file);
     }

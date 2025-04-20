@@ -86,7 +86,10 @@ export const AppraisalForm = ({ onSubmit, isLoading = false }: AppraisalFormProp
                 onRemove={() => setImageData(null)}
               />
             ) : (
-              <ImageUploader onImageSelect={setImageData} />
+              <ImageUploader 
+                onImageSelect={setImageData} 
+                onAppraisalComplete={() => {}} // Adding empty function to satisfy the type
+              />
             )}
           </div>
 
