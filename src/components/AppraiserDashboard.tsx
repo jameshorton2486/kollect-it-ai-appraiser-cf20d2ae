@@ -13,8 +13,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Settings } from "lucide-react";
-import { storeApiKey, getApiKey, hasApiKey } from "@/services/configService";
+import { storeApiKey, getApiKey } from "@/services/configService";
 import { ApiSettings } from "./ApiSettings";
+import { TemplateSelector } from "./TemplateSelector";
+import { promptTemplates } from "@/data/promptTemplates";
 
 export const AppraiserDashboard = () => {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -23,6 +25,7 @@ export const AppraiserDashboard = () => {
   const [apiKey, setApiKey] = useState<string>('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [showApiSettings, setShowApiSettings] = useState(false);
+  const [selectedTemplateId, setSelectedTemplateId] = useState('standard');
   const { image: pastedImage, handlePaste } = useClipboardImage();
 
   useEffect(() => {
@@ -57,7 +60,7 @@ export const AppraiserDashboard = () => {
     showNotification("Generating appraisal...", "info");
 
     try {
-      const result = await generateAppraisal(optimizedImage, apiKey);
+      const result = await generateAppraisal(optimizedImage, apiKey, selectedTemplateId);
       
       if (result.error) {
         showNotification(result.error, "error");
@@ -106,6 +109,16 @@ export const AppraiserDashboard = () => {
               </p>
             </div>
           </div>
+          
+          <div className="mb-4">
+            <Label>Appraisal Type</Label>
+            <TemplateSelector
+              templates={promptTemplates}
+              selectedTemplateId={selectedTemplateId}
+              onSelectTemplate={(template) => setSelectedTemplateId(template.id)}
+            />
+          </div>
+
           <ControlPanel 
             onPaste={handlePaste}
             onGenerate={handleGenerate}
