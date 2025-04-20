@@ -1,27 +1,30 @@
+
+import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ImageUploader } from "./ImageUploader";
 import { AppraisalResults } from "./AppraisalResults";
 import { ControlPanel } from "./ControlPanel";
-import { useState } from "react";
 import { showNotification } from "@/utils/notifications";
+import { useClipboardImage } from "@/hooks/useClipboardImage";
 
 export const AppraiserDashboard = () => {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [appraisalResult, setAppraisalResult] = useState<string | null>(null);
+  const { image: pastedImage, handlePaste } = useClipboardImage();
 
-  const handlePaste = () => {
-    // Will be implemented later
-    showNotification("Image paste feature coming soon", "info");
-  };
+  // Update selectedImage when an image is pasted
+  useEffect(() => {
+    if (pastedImage) {
+      setSelectedImage(pastedImage);
+    }
+  }, [pastedImage]);
 
   const handleGenerate = () => {
-    // Will be implemented later
     showNotification("Generating appraisal...", "info");
   };
 
   const handleSave = () => {
-    // Will be implemented later
     showNotification("Saving appraisal...", "info");
   };
 
