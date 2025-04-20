@@ -1,4 +1,3 @@
-
 <?php
 /**
  * Plugin Name: Expert Appraiser AI
@@ -88,3 +87,23 @@ function expert_appraiser_frontend_scripts() {
     wp_localize_script('expert-appraiser-js', 'expertAppraiserSettings', $settings);
 }
 add_action('wp_enqueue_scripts', 'expert_appraiser_frontend_scripts');
+
+// Register shortcode with new name
+function expert_appraiser_shortcode($atts) {
+    // Parse attributes
+    $atts = shortcode_atts(array(
+        'title' => 'Expert Appraiser AI',
+        'show_save' => 'true'
+    ), $atts);
+    
+    // Include the form template
+    ob_start();
+    include EXPERT_APPRAISER_PLUGIN_DIR . 'templates/form.php';
+    return ob_get_clean();
+}
+add_shortcode('expert_appraiser', 'expert_appraiser_shortcode');
+
+// Initialize custom post type
+require_once EXPERT_APPRAISER_PLUGIN_DIR . 'includes/class-appraiser-cpt.php';
+$cpt = new Appraiser_CPT();
+$cpt->init();
