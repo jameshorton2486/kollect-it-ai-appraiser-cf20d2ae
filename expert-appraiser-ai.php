@@ -56,6 +56,9 @@ function expert_appraiser_compatibility_check() {
 register_activation_hook(__FILE__, 'expert_appraiser_compatibility_check');
 
 // Include required files
+require_once EXPERT_APPRAISER_PLUGIN_DIR . 'includes/class-appraiser-api-key-manager.php';
+require_once EXPERT_APPRAISER_PLUGIN_DIR . 'includes/class-appraiser-image-processor.php';
+require_once EXPERT_APPRAISER_PLUGIN_DIR . 'includes/class-appraiser-openai-client.php';
 require_once EXPERT_APPRAISER_PLUGIN_DIR . 'includes/class-appraiser-ai.php';
 require_once EXPERT_APPRAISER_PLUGIN_DIR . 'includes/class-appraiser-admin.php';
 require_once EXPERT_APPRAISER_PLUGIN_DIR . 'includes/class-appraiser-cpt.php';
