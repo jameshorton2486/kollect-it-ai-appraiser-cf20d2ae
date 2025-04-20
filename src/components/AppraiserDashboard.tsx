@@ -3,17 +3,43 @@ import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ImageUploader } from "./ImageUploader";
 import { AppraisalResults } from "./AppraisalResults";
+import { ControlPanel } from "./ControlPanel";
 import { useState } from "react";
 
 export const AppraiserDashboard = () => {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [appraisalResult, setAppraisalResult] = useState<string | null>(null);
 
+  const handlePaste = () => {
+    // Will be implemented later
+    console.log("Paste image");
+  };
+
+  const handleGenerate = () => {
+    // Will be implemented later
+    console.log("Generate appraisal");
+  };
+
+  const handleSave = () => {
+    // Will be implemented later
+    console.log("Save appraisal");
+  };
+
   return (
     <div className="container mx-auto py-8 px-4 min-w-[768px]">
       <h1 className="text-4xl font-bold mb-8 text-center">Kollect-It Expert Appraiser</h1>
       
       <Card className="p-6">
+        <div className="mb-6">
+          <ControlPanel 
+            onPaste={handlePaste}
+            onGenerate={handleGenerate}
+            onSave={handleSave}
+            imageExists={!!selectedImage}
+            appraisalExists={!!appraisalResult}
+          />
+        </div>
+
         <Tabs defaultValue="upload" className="w-full">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="upload">Image Upload</TabsTrigger>
