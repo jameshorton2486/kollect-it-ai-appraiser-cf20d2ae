@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -11,20 +10,28 @@ import { useClipboardImage } from "@/hooks/useClipboardImage";
 import { generateAppraisal } from "@/services/appraisalService";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { storeApiKey, getApiKey, hasApiKey } from "@/services/configService";
 
 export const AppraiserDashboard = () => {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [optimizedImage, setOptimizedImage] = useState<string | null>(null);
   const [appraisalResult, setAppraisalResult] = useState<string | null>(null);
   const [apiKey, setApiKey] = useState<string>('');
-  const [isGenerating, setIsGenerating] = useState(false);
-  const { image: pastedImage, handlePaste } = useClipboardImage();
 
   useEffect(() => {
-    if (pastedImage) {
-      setSelectedImage(pastedImage);
+    const savedApiKey = getApiKey();
+    if (savedApiKey) {
+      setApiKey(savedApiKey);
     }
-  }, [pastedImage]);
+  }, []);
+
+  const handleApiKeyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newApiKey = e.target.value;
+    setApiKey(newApiKey);
+    if (newApiKey) {
+      storeApiKey(newApiKey);
+    }
+  };
 
   const handleGenerate = async () => {
     if (!optimizedImage) {
@@ -72,10 +79,13 @@ export const AppraiserDashboard = () => {
               id="apiKey"
               type="password"
               value={apiKey}
-              onChange={(e) => setApiKey(e.target.value)}
+              onChange={handleApiKeyChange}
               placeholder="Enter your OpenAI API key"
               className="max-w-md"
             />
+            <p className="text-sm text-muted-foreground mt-1">
+              Note: For better security, consider using Supabase to store your API keys.
+            </p>
           </div>
           <ControlPanel 
             onPaste={handlePaste}
