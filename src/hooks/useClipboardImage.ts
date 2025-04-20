@@ -5,25 +5,18 @@ import { showNotification } from '@/utils/notifications';
 export const useClipboardImage = () => {
   const [image, setImage] = useState<string | null>(null);
   
-  const handlePaste = useCallback(async (e?: ClipboardEvent) => {
+  const handlePaste = useCallback(async (e: ClipboardEvent) => {
     try {
-      const clipboardEvent = e || await navigator.clipboard.read().catch(() => null);
+      const clipboardItems = e.clipboardData?.items;
       
-      if (!clipboardEvent) {
-        showNotification("Could not access clipboard", "error");
-        return;
-      }
-      
-      const items = clipboardEvent.clipboardData?.items;
-      
-      if (!items) {
+      if (!clipboardItems) {
         showNotification("No items found in clipboard", "error");
         return;
       }
       
-      for (let i = 0; i < items.length; i++) {
-        if (items[i].type.indexOf('image') !== -1) {
-          const blob = items[i].getAsFile();
+      for (let i = 0; i < clipboardItems.length; i++) {
+        if (clipboardItems[i].type.indexOf('image') !== -1) {
+          const blob = clipboardItems[i].getAsFile();
           if (!blob) continue;
           
           const reader = new FileReader();
