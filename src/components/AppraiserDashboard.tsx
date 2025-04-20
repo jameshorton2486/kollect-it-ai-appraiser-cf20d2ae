@@ -1,10 +1,10 @@
-
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ImageUploader } from "./ImageUploader";
 import { AppraisalResults } from "./AppraisalResults";
 import { ControlPanel } from "./ControlPanel";
 import { useState } from "react";
+import { showNotification } from "@/utils/notifications";
 
 export const AppraiserDashboard = () => {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -12,17 +12,17 @@ export const AppraiserDashboard = () => {
 
   const handlePaste = () => {
     // Will be implemented later
-    console.log("Paste image");
+    showNotification("Image paste feature coming soon", "info");
   };
 
   const handleGenerate = () => {
     // Will be implemented later
-    console.log("Generate appraisal");
+    showNotification("Generating appraisal...", "info");
   };
 
   const handleSave = () => {
     // Will be implemented later
-    console.log("Save appraisal");
+    showNotification("Saving appraisal...", "info");
   };
 
   return (
