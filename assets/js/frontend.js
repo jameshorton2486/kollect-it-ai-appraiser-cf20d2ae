@@ -1,278 +1,212 @@
 
 /**
- * Kollect-It Appraiser Frontend JavaScript
+ * Expert Appraiser AI Frontend JavaScript
  */
 (function($) {
     'use strict';
-
-    // Initialize once DOM is ready
+    
     $(document).ready(function() {
-        // Elements
-        const tabs = $('.kollect-it-tab');
-        const tabContents = $('.kollect-it-tab-content');
-        const imageUploader = $('.kollect-it-image-uploader');
-        const imagePreview = $('.kollect-it-image-preview');
-        const generateButton = $('#kollect-it-generate-button');
-        const saveButton = $('#kollect-it-save-button');
-        const templateSelect = $('#kollect-it-template-select');
+        const form = $('#expert-appraiser-form');
+        const imageInput = $('#item_image');
+        const dropzone = $('#expert-appraiser-dropzone');
+        const preview = $('#expert-appraiser-image-preview');
+        const results = $('#expert-appraiser-results');
+        const appraisalContent = $('#expert-appraiser-appraisal-content');
+        const submitButton = $('#expert-appraiser-submit');
+        const loadingIndicator = $('#expert-appraiser-loading');
+        const saveButton = $('#expert-appraiser-save');
+        const printButton = $('#expert-appraiser-print');
         
-        // Variables
-        let selectedImage = null;
-        let optimizedImage = null;
-        let appraisalResult = null;
-        let isGenerating = false;
+        // Store the image data
+        let imageData = '';
         
-        // Paste event for the entire document
-        $(document).on('paste', function(e) {
-            const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+        // Handle drag and drop
+        dropzone.on('dragover', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            $(this).css('border-color', '#0073aa');
+        });
+        
+        dropzone.on('dragleave', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            $(this).css('border-color', '#ccc');
+        });
+        
+        dropzone.on('drop', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            $(this).css('border-color', '#ccc');
             
-            for (let i = 0; i < items.length; i++) {
-                if (items[i].type.indexOf('image') !== -1) {
-                    const blob = items[i].getAsFile();
-                    const reader = new FileReader();
-                    
-                    reader.onload = function(event) {
-                        handleImageSelection(event.target.result);
-                    };
-                    
-                    reader.readAsDataURL(blob);
-                    break;
-                }
+            const files = e.originalEvent.dataTransfer.files;
+            if (files.length) {
+                handleFiles(files);
             }
         });
         
-        // Tab switching
-        tabs.on('click', function() {
-            tabs.removeClass('active');
-            $(this).addClass('active');
-            
-            const target = $(this).data('target');
-            tabContents.removeClass('active');
-            $(target).addClass('active');
-        });
-        
-        // File selection via button
-        $('#kollect-it-select-image').on('click', function() {
-            $('#kollect-it-file-input').click();
+        // Click on dropzone
+        dropzone.on('click', function() {
+            imageInput.click();
         });
         
         // File input change
-        $('#kollect-it-file-input').on('change', function(e) {
-            if (this.files && this.files[0]) {
-                const reader = new FileReader();
-                
-                reader.onload = function(event) {
-                    handleImageSelection(event.target.result);
-                };
-                
-                reader.readAsDataURL(this.files[0]);
+        imageInput.on('change', function() {
+            if (this.files.length) {
+                handleFiles(this.files);
             }
         });
         
-        // Drag and drop
-        imageUploader.on('dragover', function(e) {
-            e.preventDefault();
-            $(this).addClass('dragging');
-        });
-        
-        imageUploader.on('dragleave', function(e) {
-            e.preventDefault();
-            $(this).removeClass('dragging');
-        });
-        
-        imageUploader.on('drop', function(e) {
-            e.preventDefault();
-            $(this).removeClass('dragging');
+        // Handle selected files
+        function handleFiles(files) {
+            const file = files[0];
             
-            const file = e.originalEvent.dataTransfer.files[0];
-            if (file && file.type.indexOf('image') !== -1) {
-                const reader = new FileReader();
-                
-                reader.onload = function(event) {
-                    handleImageSelection(event.target.result);
-                };
-                
-                reader.readAsDataURL(file);
-            }
-        });
-        
-        // Generate appraisal
-        generateButton.on('click', function() {
-            if (!optimizedImage) {
-                showNotification('Please wait for image processing to complete', 'error');
+            // Check if it's an image
+            if (!file.type.match('image.*')) {
+                alert('Please select an image file.');
                 return;
             }
             
-            if (isGenerating) {
+            // Read and display the image
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                imageData = e.target.result;
+                preview.html('<img src="' + imageData + '" alt="Item preview"/>');
+                preview.show();
+                dropzone.hide();
+            };
+            reader.readAsDataURL(file);
+        }
+        
+        // Form submission
+        form.on('submit', function(e) {
+            e.preventDefault();
+            
+            if (!imageData) {
+                alert('Please upload an image of the item.');
                 return;
             }
             
-            isGenerating = true;
-            generateButton.prop('disabled', true);
-            $('#kollect-it-generate-spinner').show();
-            $('#kollect-it-generate-text').text('Generating...');
+            // Get form values
+            const title = $('#item_title').val();
+            const description = $('#item_description').val();
+            const templateId = $('#expert-appraiser-template-select').val();
             
-            showNotification('Generating appraisal...', 'info');
+            // Show loading indicator
+            submitButton.hide();
+            loadingIndicator.show();
             
+            // Generate appraisal
             $.ajax({
-                url: kollectItSettings.ajaxUrl,
+                url: expertAppraiserSettings.ajaxUrl,
                 type: 'POST',
                 data: {
-                    action: 'kollect_it_generate_appraisal',
-                    nonce: kollectItSettings.nonce,
-                    image: optimizedImage,
-                    template_id: templateSelect.val()
+                    action: 'expert_appraiser_generate',
+                    nonce: expertAppraiserSettings.nonce,
+                    title: title,
+                    description: description,
+                    template_id: templateId,
+                    image: imageData
                 },
                 success: function(response) {
+                    // Hide loading indicator
+                    loadingIndicator.hide();
+                    submitButton.show();
+                    
                     if (response.success) {
-                        appraisalResult = response.data.appraisalText;
-                        $('#kollect-it-appraisal-results').html(appraisalResult);
+                        // Show results
+                        appraisalContent.html(response.data.appraisalText);
+                        results.show();
                         
-                        // Switch to results tab
-                        tabs.removeClass('active');
-                        $('.kollect-it-tab[data-target="#kollect-it-tab-results"]').addClass('active');
-                        tabContents.removeClass('active');
-                        $('#kollect-it-tab-results').addClass('active');
-                        
-                        saveButton.prop('disabled', false);
-                        
-                        showNotification('Appraisal generated successfully!', 'success');
+                        // Scroll to results
+                        $('html, body').animate({
+                            scrollTop: results.offset().top - 50
+                        }, 500);
                     } else {
-                        showNotification(response.data.message || 'Failed to generate appraisal', 'error');
+                        alert('Error: ' + response.data.message);
                     }
                 },
                 error: function() {
-                    showNotification('Server error. Please try again later.', 'error');
-                },
-                complete: function() {
-                    isGenerating = false;
-                    generateButton.prop('disabled', false);
-                    $('#kollect-it-generate-spinner').hide();
-                    $('#kollect-it-generate-text').text('Generate Appraisal');
+                    loadingIndicator.hide();
+                    submitButton.show();
+                    alert('An error occurred. Please try again.');
                 }
             });
         });
         
         // Save appraisal
-        saveButton.on('click', function() {
-            if (!appraisalResult) {
-                showNotification('Please generate an appraisal first', 'error');
-                return;
-            }
-            
-            saveButton.prop('disabled', true);
-            $('#kollect-it-save-spinner').show();
-            
-            showNotification('Saving appraisal...', 'info');
-            
-            $.ajax({
-                url: kollectItSettings.ajaxUrl,
-                type: 'POST',
-                data: {
-                    action: 'kollect_it_save_appraisal',
-                    nonce: kollectItSettings.nonce,
-                    image: optimizedImage,
-                    appraisal: appraisalResult,
-                    template_id: templateSelect.val()
-                },
-                success: function(response) {
-                    if (response.success) {
-                        showNotification('Appraisal saved successfully!', 'success');
-                    } else {
-                        showNotification(response.data.message || 'Failed to save appraisal', 'error');
+        if (saveButton) {
+            saveButton.on('click', function() {
+                const title = $('#item_title').val();
+                const description = $('#item_description').val();
+                const templateId = $('#expert-appraiser-template-select').val();
+                const appraisal = appraisalContent.html();
+                
+                $(this).prop('disabled', true).text('Saving...');
+                
+                $.ajax({
+                    url: expertAppraiserSettings.ajaxUrl,
+                    type: 'POST',
+                    data: {
+                        action: 'expert_appraiser_save',
+                        nonce: expertAppraiserSettings.nonce,
+                        title: title,
+                        description: description,
+                        template_id: templateId,
+                        image: imageData,
+                        appraisal: appraisal
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            alert('Appraisal saved successfully!');
+                        } else {
+                            alert('Error: ' + response.data.message);
+                        }
+                        saveButton.prop('disabled', false).text('Save This Appraisal');
+                    },
+                    error: function() {
+                        alert('An error occurred while saving the appraisal.');
+                        saveButton.prop('disabled', false).text('Save This Appraisal');
                     }
-                },
-                error: function() {
-                    showNotification('Server error. Please try again later.', 'error');
-                },
-                complete: function() {
-                    saveButton.prop('disabled', false);
-                    $('#kollect-it-save-spinner').hide();
-                }
+                });
             });
-        });
-        
-        // Template select change
-        templateSelect.on('change', function() {
-            const templateId = $(this).val();
-            const description = $(this).find('option:selected').data('description');
-            $('#kollect-it-template-description').text(description);
-        });
-        
-        // Helper function to handle image selection
-        function handleImageSelection(imageData) {
-            selectedImage = imageData;
-            
-            // Show the image in the preview area
-            imagePreview.html(`<img src="${imageData}" alt="Item to appraise">`);
-            $('#kollect-it-image-metadata').show();
-            
-            // Process the image
-            processImage(imageData);
-            
-            // Enable the generate button
-            generateButton.prop('disabled', false);
         }
         
-        // Helper function to process the image
-        function processImage(imageData) {
-            // Show processing indicators
-            $('#kollect-it-processing-overlay').show();
-            updateProgress(25);
-            
-            // Create an image object to get dimensions
-            const img = new Image();
-            img.onload = function() {
-                // Get dimensions and update metadata
-                $('#kollect-it-image-width').text(this.width);
-                $('#kollect-it-image-height').text(this.height);
+        // Print appraisal
+        if (printButton) {
+            printButton.on('click', function() {
+                const title = $('#item_title').val();
+                const appraisal = appraisalContent.html();
                 
-                updateProgress(50);
+                // Create print window
+                const printWindow = window.open('', '_blank');
+                printWindow.document.write(`
+                    <html>
+                    <head>
+                        <title>Expert Appraisal: ${title}</title>
+                        <style>
+                            body { font-family: Arial, sans-serif; line-height: 1.6; padding: 20px; }
+                            h1 { text-align: center; }
+                            .appraisal-date { text-align: right; margin-bottom: 20px; }
+                            .content { margin-top: 30px; }
+                        </style>
+                    </head>
+                    <body>
+                        <h1>Expert Appraisal Report</h1>
+                        <div class="appraisal-date">Date: ${new Date().toLocaleDateString()}</div>
+                        <h2>${title}</h2>
+                        <div class="content">${appraisal}</div>
+                    </body>
+                    </html>
+                `);
                 
-                // In a real implementation, you might want to resize/compress the image here
-                // For now, we'll just use a setTimeout to simulate processing
+                // Print and close
+                printWindow.document.close();
+                printWindow.focus();
                 setTimeout(function() {
-                    // Set optimized image
-                    optimizedImage = imageData;
-                    
-                    updateProgress(100);
-                    
-                    // Hide processing overlay after a short delay
-                    setTimeout(function() {
-                        $('#kollect-it-processing-overlay').hide();
-                    }, 500);
-                }, 1000);
-            };
-            
-            img.src = imageData;
-        }
-        
-        // Helper function to update progress bar
-        function updateProgress(value) {
-            $('#kollect-it-progress-bar').css('width', value + '%');
-        }
-        
-        // Helper function to show notifications
-        function showNotification(message, type) {
-            const notification = $('#kollect-it-notification');
-            
-            // Set message and type
-            notification.text(message);
-            notification.removeClass('kollect-it-error kollect-it-success');
-            
-            if (type === 'error') {
-                notification.addClass('kollect-it-error');
-            } else if (type === 'success') {
-                notification.addClass('kollect-it-success');
-            }
-            
-            // Show notification
-            notification.addClass('show');
-            
-            // Hide after 3 seconds
-            setTimeout(function() {
-                notification.removeClass('show');
-            }, 3000);
+                    printWindow.print();
+                    printWindow.close();
+                }, 250);
+            });
         }
     });
 })(jQuery);

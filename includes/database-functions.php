@@ -21,7 +21,7 @@ function kollect_it_save_appraisal($data) {
         'post_title'   => wp_strip_all_tags($data['title']),
         'post_content' => wp_kses_post($data['appraisal_text']),
         'post_status'  => 'publish',
-        'post_type'    => 'kollect_it_appraisal'
+        'post_type'    => 'expert_appraisal'
     );
 
     // Insert the post
@@ -49,7 +49,7 @@ function kollect_it_save_appraisal($data) {
  */
 function kollect_it_get_appraisal($id) {
     $post = get_post($id);
-    if (!$post || $post->post_type !== 'kollect_it_appraisal') {
+    if (!$post || $post->post_type !== 'expert_appraisal') {
         return new WP_Error('not_found', 'Appraisal not found.');
     }
 
@@ -72,7 +72,7 @@ function kollect_it_get_appraisal($id) {
  */
 function kollect_it_get_recent_appraisals($limit = 10) {
     $args = array(
-        'post_type' => 'kollect_it_appraisal',
+        'post_type' => 'expert_appraisal',
         'posts_per_page' => absint($limit),
         'orderby' => 'date',
         'order' => 'DESC'
@@ -104,7 +104,7 @@ function kollect_it_get_recent_appraisals($limit = 10) {
  */
 function kollect_it_delete_appraisal($id) {
     $post = get_post($id);
-    if (!$post || $post->post_type !== 'kollect_it_appraisal') {
+    if (!$post || $post->post_type !== 'expert_appraisal') {
         return new WP_Error('not_found', 'Appraisal not found.');
     }
 
@@ -115,4 +115,3 @@ function kollect_it_delete_appraisal($id) {
 
     return true;
 }
-

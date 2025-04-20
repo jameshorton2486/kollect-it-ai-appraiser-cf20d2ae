@@ -1,110 +1,109 @@
 
 /**
- * Kollect-It Appraiser Admin JavaScript
+ * Expert Appraiser AI Admin JavaScript
  */
 (function($) {
     'use strict';
-
-    // Initialize once DOM is ready
+    
     $(document).ready(function() {
-        // API Key form
-        const apiKeyForm = $('#kollect-it-api-key-form');
+        // API Key form handling
+        const apiKeyForm = $('#expert-appraiser-api-key-form');
+        const testButton = $('#expert-appraiser-test-api-key');
         
         if (apiKeyForm.length) {
             apiKeyForm.on('submit', function(e) {
                 e.preventDefault();
                 
-                const apiKey = $('#kollect-it-api-key').val();
-                const submitButton = $('#kollect-it-api-key-submit');
-                const originalText = submitButton.val();
+                const apiKey = $('#expert-appraiser-api-key').val();
+                const submitButton = $('#expert-appraiser-api-key-submit');
                 
-                // Disable button and show loading state
                 submitButton.val('Saving...').prop('disabled', true);
                 
-                // Send AJAX request
                 $.ajax({
                     url: ajaxurl,
                     type: 'POST',
                     data: {
-                        action: 'kollect_it_save_api_key',
-                        nonce: $('#kollect_it_admin_nonce').val(),
+                        action: 'expert_appraiser_save_api_key',
+                        nonce: $('#expert_appraiser_admin_nonce').val(),
                         api_key: apiKey
                     },
                     success: function(response) {
+                        submitButton.val('Save API Key').prop('disabled', false);
+                        
                         if (response.success) {
-                            showAdminNotice('success', response.data.message);
+                            showNotice('success', response.data.message);
                         } else {
-                            showAdminNotice('error', response.data.message);
+                            showNotice('error', response.data.message);
                         }
                     },
                     error: function() {
-                        showAdminNotice('error', 'A server error occurred. Please try again.');
-                    },
-                    complete: function() {
-                        // Restore button state
-                        submitButton.val(originalText).prop('disabled', false);
+                        submitButton.val('Save API Key').prop('disabled', false);
+                        showNotice('error', 'An error occurred. Please try again.');
                     }
                 });
             });
         }
         
-        // Test API Key
-        $('#kollect-it-test-api-key').on('click', function(e) {
-            e.preventDefault();
-            
-            const apiKey = $('#kollect-it-api-key').val();
-            const button = $(this);
-            const originalText = button.text();
-            
-            if (!apiKey) {
-                showAdminNotice('error', 'Please enter an API key to test.');
-                return;
-            }
-            
-            // Disable button and show loading state
-            button.text('Testing...').prop('disabled', true);
-            
-            // Send AJAX request to test the API key
-            $.ajax({
-                url: ajaxurl,
-                type: 'POST',
-                data: {
-                    action: 'kollect_it_test_api_key',
-                    nonce: $('#kollect_it_admin_nonce').val(),
-                    api_key: apiKey
-                },
-                success: function(response) {
-                    if (response.success) {
-                        showAdminNotice('success', 'API key is valid and working properly.');
-                    } else {
-                        showAdminNotice('error', response.data.message || 'Failed to validate API key.');
+        // Test API key
+        if (testButton.length) {
+            testButton.on('click', function(e) {
+                e.preventDefault();
+                
+                const apiKey = $('#expert-appraiser-api-key').val();
+                
+                $(this).text('Testing...').prop('disabled', true);
+                
+                $.ajax({
+                    url: ajaxurl,
+                    type: 'POST',
+                    data: {
+                        action: 'expert_appraiser_test_api_key',
+                        nonce: $('#expert_appraiser_admin_nonce').val(),
+                        api_key: apiKey
+                    },
+                    success: function(response) {
+                        testButton.text('Test API Key').prop('disabled', false);
+                        
+                        if (response.success) {
+                            showNotice('success', response.data.message);
+                        } else {
+                            showNotice('error', response.data.message);
+                        }
+                    },
+                    error: function() {
+                        testButton.text('Test API Key').prop('disabled', false);
+                        showNotice('error', 'An error occurred while testing the API key.');
                     }
-                },
-                error: function() {
-                    showAdminNotice('error', 'A server error occurred. Please try again.');
-                },
-                complete: function() {
-                    // Restore button state
-                    button.text(originalText).prop('disabled', false);
-                }
+                });
             });
-        });
+        }
         
-        // Helper function to show admin notices
-        function showAdminNotice(type, message) {
-            // Remove any existing notices
-            $('.kollect-it-admin-notice').remove();
+        // Show notice
+        function showNotice(type, message) {
+            // Remove existing notices
+            $('.expert-appraiser-admin-notice').remove();
             
             // Create new notice
-            const notice = $('<div class="kollect-it-admin-notice kollect-it-admin-notice-' + type + '"><p>' + message + '</p></div>');
+            const notice = $(`
+                <div class="expert-appraiser-admin-notice expert-appraiser-admin-notice-${type}">
+                    <p>${message}</p>
+                </div>
+            `);
             
-            // Insert after the form
+            // Insert after form
             apiKeyForm.after(notice);
             
             // Scroll to notice
             $('html, body').animate({
                 scrollTop: notice.offset().top - 50
             }, 500);
+            
+            // Auto-remove after 5 seconds
+            setTimeout(function() {
+                notice.fadeOut(400, function() {
+                    notice.remove();
+                });
+            }, 5000);
         }
     });
 })(jQuery);

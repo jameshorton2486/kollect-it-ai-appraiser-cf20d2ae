@@ -1,243 +1,183 @@
-/* Kollect-It Appraiser Frontend Styles */
-.kollect-it-container {
-    max-width: 1200px;
+
+/* Expert Appraiser AI Frontend Styles */
+.expert-appraiser-container {
+    max-width: 900px;
     margin: 0 auto;
-    padding: 20px;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
 }
 
-.kollect-it-title {
-    font-size: 28px;
-    font-weight: bold;
+.expert-appraiser-title {
     text-align: center;
-    margin-bottom: 20px;
-    color: #1a1f2c;
+    margin-bottom: 30px;
 }
 
-.kollect-it-card {
-    background-color: white;
+.expert-appraiser-card {
+    background: #fff;
     border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    padding: 20px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    padding: 30px;
+    margin-bottom: 30px;
+}
+
+.expert-appraiser-form {
+    display: grid;
+    gap: 20px;
+}
+
+.expert-appraiser-form-group {
     margin-bottom: 20px;
 }
 
-.kollect-it-control-panel {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    margin-bottom: 20px;
-}
-
-.kollect-it-button {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 8px 16px;
-    background-color: #9b87f5;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: background-color 0.2s;
-}
-
-.kollect-it-button:hover {
-    background-color: #7e69ab;
-}
-
-.kollect-it-button:disabled {
-    background-color: #ccc;
-    cursor: not-allowed;
-}
-
-.kollect-it-button-outline {
-    background-color: transparent;
-    color: #1a1f2c;
-    border: 1px solid #d1d5db;
-}
-
-.kollect-it-button-outline:hover {
-    background-color: #f3f4f6;
-}
-
-.kollect-it-tabs {
-    display: flex;
-    border-bottom: 1px solid #e5e7eb;
-    margin-bottom: 20px;
-}
-
-.kollect-it-tab {
-    padding: 10px 20px;
-    cursor: pointer;
-    border-bottom: 2px solid transparent;
-}
-
-.kollect-it-tab.active {
-    border-bottom-color: #9b87f5;
-    font-weight: 500;
-}
-
-.kollect-it-tab-content {
-    display: none;
-}
-
-.kollect-it-tab-content.active {
+.expert-appraiser-label {
     display: block;
+    font-weight: 600;
+    margin-bottom: 8px;
 }
 
-.kollect-it-image-uploader {
-    border: 2px dashed #d1d5db;
-    border-radius: 8px;
-    padding: 40px;
-    text-align: center;
-    margin-bottom: 20px;
-}
-
-.kollect-it-image-uploader.dragging {
-    border-color: #9b87f5;
-    background-color: rgba(155, 135, 245, 0.05);
-}
-
-.kollect-it-image-preview {
-    max-height: 400px;
-    overflow: auto;
-    text-align: center;
-}
-
-.kollect-it-image-preview img {
-    max-width: 100%;
-    max-height: 400px;
-    object-fit: contain;
-}
-
-.kollect-it-form {
-    max-width: 800px;
-    margin: 0 auto;
-}
-
-.kollect-it-input,
-.kollect-it-textarea {
+.expert-appraiser-input,
+.expert-appraiser-textarea,
+.expert-appraiser-select {
     width: 100%;
-    padding: 8px 12px;
-    border: 1px solid #d1d5db;
+    padding: 10px;
+    border: 1px solid #ddd;
     border-radius: 4px;
-    margin-top: 4px;
     font-size: 16px;
 }
 
-.kollect-it-textarea {
-    min-height: 100px;
-    resize: vertical;
+.expert-appraiser-textarea {
+    min-height: 120px;
 }
 
-.kollect-it-file-input {
-    display: block;
-    width: 100%;
-    padding: 8px;
-    margin-top: 4px;
-    border: 1px solid #d1d5db;
+.expert-appraiser-file-input {
+    display: none;
+}
+
+.expert-appraiser-dropzone {
+    border: 2px dashed #ccc;
     border-radius: 4px;
-    background-color: white;
+    padding: 30px;
+    text-align: center;
+    cursor: pointer;
+    background: #f9f9f9;
+    transition: all 0.3s ease;
 }
 
-.kollect-it-form-group {
-    margin-bottom: 15px;
+.expert-appraiser-dropzone:hover {
+    border-color: #999;
+    background: #f3f3f3;
 }
 
-.kollect-it-label {
-    display: block;
-    font-weight: 500;
-    margin-bottom: 5px;
+.expert-appraiser-dropzone-message {
+    color: #666;
 }
 
-.kollect-it-select {
-    width: 100%;
-    padding: 8px 12px;
-    border: 1px solid #d1d5db;
+.expert-appraiser-image-preview {
+    margin-top: 15px;
+    display: none;
+}
+
+.expert-appraiser-image-preview img {
+    max-width: 100%;
+    max-height: 300px;
     border-radius: 4px;
-    background-color: white;
+    display: block;
+    margin: 0 auto;
 }
 
-.kollect-it-description {
+.expert-appraiser-button {
+    background-color: #0073aa;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    font-size: 16px;
+    font-weight: 600;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.expert-appraiser-button:hover {
+    background-color: #005f8b;
+}
+
+.expert-appraiser-button-secondary {
+    background-color: #f7f7f7;
+    color: #23282d;
+    border: 1px solid #cccccc;
+}
+
+.expert-appraiser-button-secondary:hover {
+    background-color: #f0f0f0;
+}
+
+.expert-appraiser-hint {
     font-size: 14px;
-    color: #6b7280;
+    color: #666;
     margin-top: 5px;
 }
 
-.kollect-it-results {
-    border: 1px solid #e5e7eb;
-    border-radius: 8px;
-    padding: 20px;
-    max-height: 600px;
-    overflow: auto;
+.expert-appraiser-loading {
+    text-align: center;
+    margin: 20px 0;
 }
 
-.kollect-it-progress {
-    height: 8px;
-    width: 100%;
-    background-color: #e5e7eb;
-    border-radius: 4px;
-    margin: 10px 0;
-    overflow: hidden;
-}
-
-.kollect-it-progress-bar {
-    height: 100%;
-    background-color: #9b87f5;
-    width: 0%;
-    transition: width 0.3s ease;
-}
-
-.kollect-it-spinner {
-    display: inline-block;
-    width: 20px;
-    height: 20px;
-    border: 3px solid rgba(155, 135, 245, 0.3);
+.expert-appraiser-spinner {
+    border: 4px solid rgba(0, 0, 0, 0.1);
+    border-left: 4px solid #0073aa;
     border-radius: 50%;
-    border-top-color: #9b87f5;
-    animation: kollect-it-spin 1s linear infinite;
-    margin-right: 8px;
+    width: 30px;
+    height: 30px;
+    animation: expert-appraiser-spin 1s linear infinite;
+    margin: 0 auto 10px;
 }
 
-@keyframes kollect-it-spin {
-    to { transform: rotate(360deg); }
+@keyframes expert-appraiser-spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
 }
 
-.kollect-it-error {
-    background-color: #fee2e2;
-    color: #b91c1c;
-    padding: 12px;
+.expert-appraiser-results {
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid #eee;
+}
+
+.expert-appraiser-appraisal-content {
+    line-height: 1.6;
+    margin-bottom: 20px;
+}
+
+.expert-appraiser-appraisal-content h3,
+.expert-appraiser-appraisal-content h4 {
+    margin-top: 20px;
+    margin-bottom: 10px;
+}
+
+.expert-appraiser-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.expert-appraiser-error {
+    background-color: #f8d7da;
+    color: #721c24;
+    padding: 15px;
+    margin-bottom: 20px;
+    border: 1px solid #f5c6cb;
     border-radius: 4px;
-    margin-bottom: 15px;
 }
 
-.kollect-it-success {
-    background-color: #dcfce7;
-    color: #15803d;
-    padding: 12px;
-    border-radius: 4px;
-    margin-bottom: 15px;
-}
-
-.kollect-it-notification {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    padding: 12px 20px;
-    background-color: #1a1f2c;
-    color: white;
-    border-radius: 4px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    z-index: 1000;
-    opacity: 0;
-    transform: translateY(20px);
-    transition: opacity 0.3s, transform 0.3s;
-}
-
-.kollect-it-notification.show {
-    opacity: 1;
-    transform: translateY(0);
+@media (max-width: 768px) {
+    .expert-appraiser-card {
+        padding: 20px;
+    }
+    
+    .expert-appraiser-form {
+        gap: 15px;
+    }
+    
+    .expert-appraiser-actions {
+        flex-direction: column;
+    }
 }
