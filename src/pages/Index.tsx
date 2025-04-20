@@ -1,11 +1,14 @@
 
 import { AppraiserDashboard } from "@/components/AppraiserDashboard";
+import { MainLayout } from "@/components/MainLayout";
 
 const Index = () => {
   return (
-    <div className="min-h-screen bg-background">
-      <AppraiserDashboard />
-    </div>
+    <MainLayout>
+      <div className="min-h-screen bg-background">
+        <AppraiserDashboard />
+      </div>
+    </MainLayout>
   );
 };
 
