@@ -1,73 +1,61 @@
-
 <?php
 /**
- * Admin functionality for Expert Appraiser AI
+ * Class for admin functionality
  */
-class Appraiser_Admin {
+class Expert_Appraiser_Admin {
     /**
-     * Initialize admin functionality
+     * Constructor
      */
-    public function init() {
+    public function __construct() {
         // Add admin menu
         add_action('admin_menu', array($this, 'add_admin_menu'));
         
         // Register settings
         add_action('admin_init', array($this, 'register_settings'));
         
-        // AJAX handlers for admin
-        add_action('wp_ajax_expert_appraiser_save_api_key', array($this, 'save_api_key'));
-        add_action('wp_ajax_expert_appraiser_test_api_key', array($this, 'test_api_key'));
-        
-        // Handle appraisal deletion
-        add_action('admin_post_expert_appraiser_delete_appraisal', array($this, 'handle_delete_appraisal'));
-        
-        // Add custom user capabilities
-        add_action('admin_init', array($this, 'add_custom_capabilities'));
-        
-        // Register rate limiting
-        add_action('init', array($this, 'register_rate_limiting'));
+        // Add settings link to plugins page
+        add_filter('plugin_action_links_expert-appraiser-ai/expert-appraiser-ai.php', array($this, 'add_settings_link'));
     }
     
     /**
-     * Add admin menu items
+     * Add settings link to plugin listing
+     */
+    public function add_settings_link($links) {
+        $settings_link = '<a href="' . admin_url('admin.php?page=expert-appraiser-settings') . '">' . __('Settings', 'expert-appraiser-ai') . '</a>';
+        array_unshift($links, $settings_link);
+        return $links;
+    }
+    
+    /**
+     * Add admin menu
      */
     public function add_admin_menu() {
         add_menu_page(
-            __('Expert Appraiser AI', 'expert-appraiser-ai'),
             __('Expert Appraiser', 'expert-appraiser-ai'),
-            'use_appraiser', // Custom capability
+            __('Expert Appraiser', 'expert-appraiser-ai'),
+            'use_appraiser',
             'expert-appraiser',
-            array($this, 'render_admin_page'),
-            'dashicons-search',
+            array($this, 'admin_page'),
+            'dashicons-welcome-learn-more',
             30
         );
         
         add_submenu_page(
             'expert-appraiser',
-            __('Appraisals', 'expert-appraiser-ai'),
-            __('Appraisals', 'expert-appraiser-ai'),
-            'use_appraiser', // Custom capability
-            'expert-appraiser-items',
-            array($this, 'render_appraisals_page')
-        );
-        
-        add_submenu_page(
-            'expert-appraiser',
             __('Settings', 'expert-appraiser-ai'),
             __('Settings', 'expert-appraiser-ai'),
-            'manage_options', // Only admin can access settings
+            'manage_options',
             'expert-appraiser-settings',
-            array($this, 'render_settings_page')
+            array($this, 'settings_page')
         );
         
-        // Add user management page for admins only
         add_submenu_page(
             'expert-appraiser',
-            __('User Management', 'expert-appraiser-ai'),
-            __('User Management', 'expert-appraiser-ai'),
-            'manage_options', // Only admin can access
-            'expert-appraiser-users',
-            array($this, 'render_user_management_page')
+            __('Appraisals', 'expert-appraiser-ai'),
+            __('Appraisals', 'expert-appraiser-ai'),
+            'use_appraiser',
+            'expert-appraiser-items',
+            array($this, 'appraisals_page')
         );
     }
     
@@ -75,304 +63,233 @@ class Appraiser_Admin {
      * Register settings
      */
     public function register_settings() {
-        register_setting('expert_appraiser_settings', 'expert_appraiser_openai_model', array(
-            'type' => 'string',
-            'default' => 'gpt-4o-mini',
-            'sanitize_callback' => 'sanitize_text_field'
-        ));
-        
-        // Add usage limit settings
-        register_setting('expert_appraiser_settings', 'expert_appraiser_daily_limit', array(
-            'type' => 'integer',
+        register_setting('expert_appraiser_settings', 'appraiser_openai_key');
+        register_setting('expert_appraiser_settings', 'appraiser_usage_limit', array(
             'default' => 10,
             'sanitize_callback' => 'absint'
         ));
-        
-        register_setting('expert_appraiser_settings', 'expert_appraiser_rate_limit', array(
-            'type' => 'integer',
-            'default' => 5, // 5 requests per minute
+        register_setting('expert_appraiser_settings', 'appraiser_rate_limit', array(
+            'default' => 5,
             'sanitize_callback' => 'absint'
         ));
+        register_setting('expert_appraiser_settings', 'appraiser_require_login', array(
+            'default' => 'no'
+        ));
     }
     
     /**
-     * Render the main admin page
+     * Admin page
      */
-    public function render_admin_page() {
-        include EXPERT_APPRAISER_PLUGIN_DIR . 'templates/admin-dashboard.php';
+    public function admin_page() {
+        ?>
+        <div class="wrap">
+            <h1><?php echo esc_html__('Expert Appraiser AI', 'expert-appraiser-ai'); ?></h1>
+            
+            <div class="card">
+                <h2><?php echo esc_html__('Overview', 'expert-appraiser-ai'); ?></h2>
+                <p><?php echo esc_html__('Expert Appraiser AI uses OpenAI\'s GPT-4 Vision to generate professional appraisals for antiques and collectibles.', 'expert-appraiser-ai'); ?></p>
+                
+                <h3><?php echo esc_html__('Usage', 'expert-appraiser-ai'); ?></h3>
+                <p><?php echo esc_html__('Add the shortcode [expert_appraiser] to any page or post where you want the appraisal tool to appear.', 'expert-appraiser-ai'); ?></p>
+                
+                <h3><?php echo esc_html__('API Key Required', 'expert-appraiser-ai'); ?></h3>
+                <p><?php echo esc_html__('You must configure your OpenAI API key in the settings to use this plugin.', 'expert-appraiser-ai'); ?></p>
+                
+                <p><a href="<?php echo esc_url(admin_url('admin.php?page=expert-appraiser-settings')); ?>" class="button button-primary"><?php echo esc_html__('Configure Settings', 'expert-appraiser-ai'); ?></a></p>
+            </div>
+        </div>
+        <?php
     }
     
     /**
-     * Render the appraisals admin page
+     * Settings page
      */
-    public function render_appraisals_page() {
-        include EXPERT_APPRAISER_PLUGIN_DIR . 'templates/admin-appraisals.php';
+    public function settings_page() {
+        ?>
+        <div class="wrap">
+            <h1><?php echo esc_html__('Expert Appraiser Settings', 'expert-appraiser-ai'); ?></h1>
+            
+            <form method="post" action="options.php">
+                <?php settings_fields('expert_appraiser_settings'); ?>
+                <?php do_settings_sections('expert_appraiser_settings'); ?>
+                
+                <table class="form-table">
+                    <tr valign="top">
+                        <th scope="row"><?php echo esc_html__('OpenAI API Key', 'expert-appraiser-ai'); ?></th>
+                        <td>
+                            <input type="password" name="appraiser_openai_key" value="<?php echo esc_attr(get_option('appraiser_openai_key')); ?>" class="regular-text" />
+                            <p class="description"><?php echo esc_html__('Enter your OpenAI API key.', 'expert-appraiser-ai'); ?></p>
+                        </td>
+                    </tr>
+                    
+                    <tr valign="top">
+                        <th scope="row"><?php echo esc_html__('Daily Usage Limit', 'expert-appraiser-ai'); ?></th>
+                        <td>
+                            <input type="number" name="appraiser_usage_limit" value="<?php echo esc_attr(get_option('appraiser_usage_limit', 10)); ?>" class="small-text" min="1" />
+                            <p class="description"><?php echo esc_html__('Maximum number of appraisals per user per day.', 'expert-appraiser-ai'); ?></p>
+                        </td>
+                    </tr>
+                    
+                    <tr valign="top">
+                        <th scope="row"><?php echo esc_html__('Rate Limit (per minute)', 'expert-appraiser-ai'); ?></th>
+                        <td>
+                            <input type="number" name="appraiser_rate_limit" value="<?php echo esc_attr(get_option('appraiser_rate_limit', 5)); ?>" class="small-text" min="1" />
+                            <p class="description"><?php echo esc_html__('Maximum number of requests per user per minute.', 'expert-appraiser-ai'); ?></p>
+                        </td>
+                    </tr>
+                    
+                    <tr valign="top">
+                        <th scope="row"><?php echo esc_html__('Require Login', 'expert-appraiser-ai'); ?></th>
+                        <td>
+                            <label>
+                                <input type="checkbox" name="appraiser_require_login" value="yes" <?php checked('yes', get_option('appraiser_require_login', 'no')); ?> />
+                                <?php echo esc_html__('Users must be logged in to use the appraisal tool', 'expert-appraiser-ai'); ?>
+                            </label>
+                        </td>
+                    </tr>
+                </table>
+                
+                <?php submit_button(); ?>
+            </form>
+        </div>
+        <?php
     }
     
     /**
-     * Render the settings admin page
+     * Appraisals page
      */
-    public function render_settings_page() {
-        include EXPERT_APPRAISER_PLUGIN_DIR . 'templates/admin-settings.php';
-    }
-    
-    /**
-     * Render user management page
-     */
-    public function render_user_management_page() {
-        include EXPERT_APPRAISER_PLUGIN_DIR . 'templates/admin-user-management.php';
-    }
-    
-    /**
-     * Save API key
-     */
-    public function save_api_key() {
-        // Check permissions
-        if (!current_user_can('manage_options')) {
-            wp_send_json_error(array('message' => 'Permission denied.'));
-        }
-        
-        // Check nonce
-        if (!check_ajax_referer('expert_appraiser_admin_nonce', 'nonce', false)) {
-            wp_send_json_error(array('message' => 'Invalid security token.'));
-        }
-        
-        $api_key = sanitize_text_field($_POST['api_key']);
-        
-        if (empty($api_key)) {
-            wp_send_json_error(array('message' => 'API key cannot be empty.'));
-        }
-        
-        // Store in the database
+    public function appraisals_page() {
         global $wpdb;
-        $table_name = $wpdb->prefix . 'expert_appraiser_api_keys';
+        $table_name = $wpdb->prefix . 'expert_appraisals';
         
-        // Clear existing keys
-        $wpdb->query("TRUNCATE TABLE $table_name");
+        // Determine if viewing a single appraisal
+        $appraisal_id = isset($_GET['appraisal']) ? intval($_GET['appraisal']) : 0;
         
-        // Insert new key
-        $result = $wpdb->insert(
-            $table_name,
-            array('api_key' => $api_key),
-            array('%s')
-        );
-        
-        if ($result === false) {
-            wp_send_json_error(array('message' => 'Failed to save API key.'));
+        if ($appraisal_id > 0) {
+            $this->view_single_appraisal($appraisal_id);
+            return;
         }
         
-        wp_send_json_success(array('message' => 'API key saved successfully.'));
-    }
-    
-    /**
-     * Test API key
-     */
-    public function test_api_key() {
-        // Check permissions
-        if (!current_user_can('manage_options')) {
-            wp_send_json_error(array('message' => 'Permission denied.'));
-        }
+        // Get appraisals with pagination
+        $page = isset($_GET['paged']) ? max(1, intval($_GET['paged'])) : 1;
+        $per_page = 20;
+        $offset = ($page - 1) * $per_page;
         
-        // Check nonce
-        if (!check_ajax_referer('expert_appraiser_admin_nonce', 'nonce', false)) {
-            wp_send_json_error(array('message' => 'Invalid security token.'));
-        }
-        
-        // Get API key from POST or database
-        $api_key = '';
-        if (!empty($_POST['api_key'])) {
-            $api_key = sanitize_text_field($_POST['api_key']);
-        } else {
-            global $wpdb;
-            $table_name = $wpdb->prefix . 'expert_appraiser_api_keys';
-            $api_key = $wpdb->get_var("SELECT api_key FROM $table_name ORDER BY id DESC LIMIT 1");
-        }
-        
-        if (empty($api_key)) {
-            wp_send_json_error(array('message' => 'No API key provided.'));
-        }
-        
-        // Simple test request to OpenAI
-        $response = wp_remote_post('https://api.openai.com/v1/chat/completions', array(
-            'headers' => array(
-                'Authorization' => 'Bearer ' . $api_key,
-                'Content-Type' => 'application/json'
-            ),
-            'body' => json_encode(array(
-                'model' => 'gpt-4o-mini',
-                'messages' => array(
-                    array(
-                        'role' => 'user',
-                        'content' => 'Say "API key is working" in 5 words or less'
-                    )
-                ),
-                'max_tokens' => 20
-            )),
-            'timeout' => 10
+        $appraisals = $wpdb->get_results($wpdb->prepare(
+            "SELECT * FROM $table_name ORDER BY created_at DESC LIMIT %d OFFSET %d",
+            $per_page,
+            $offset
         ));
         
-        if (is_wp_error($response)) {
-            wp_send_json_error(array('message' => 'API test failed: ' . $response->get_error_message()));
-        }
-        
-        $body = json_decode(wp_remote_retrieve_body($response), true);
-        
-        if (isset($body['error'])) {
-            wp_send_json_error(array('message' => 'API test failed: ' . $body['error']['message']));
-        }
-        
-        wp_send_json_success(array('message' => 'API key is valid and working.'));
+        $total_items = $wpdb->get_var("SELECT COUNT(*) FROM $table_name");
+        $total_pages = ceil($total_items / $per_page);
+        ?>
+        <div class="wrap">
+            <h1><?php echo esc_html__('Appraisals', 'expert-appraiser-ai'); ?></h1>
+            
+            <?php if (empty($appraisals)): ?>
+                <p><?php echo esc_html__('No appraisals found.', 'expert-appraiser-ai'); ?></p>
+            <?php else: ?>
+                <table class="wp-list-table widefat fixed striped">
+                    <thead>
+                        <tr>
+                            <th><?php echo esc_html__('ID', 'expert-appraiser-ai'); ?></th>
+                            <th><?php echo esc_html__('Item', 'expert-appraiser-ai'); ?></th>
+                            <th><?php echo esc_html__('User', 'expert-appraiser-ai'); ?></th>
+                            <th><?php echo esc_html__('Date', 'expert-appraiser-ai'); ?></th>
+                            <th><?php echo esc_html__('Actions', 'expert-appraiser-ai'); ?></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($appraisals as $appraisal): ?>
+                            <?php
+                            $user_info = get_userdata($appraisal->user_id);
+                            $username = $user_info ? $user_info->display_name : __('Unknown', 'expert-appraiser-ai');
+                            $view_url = add_query_arg('appraisal', $appraisal->id, admin_url('admin.php?page=expert-appraiser-items'));
+                            ?>
+                            <tr>
+                                <td><?php echo esc_html($appraisal->id); ?></td>
+                                <td><?php echo esc_html($appraisal->item_name); ?></td>
+                                <td><?php echo esc_html($username); ?></td>
+                                <td><?php echo esc_html(date_i18n(get_option('date_format'), strtotime($appraisal->created_at))); ?></td>
+                                <td>
+                                    <a href="<?php echo esc_url($view_url); ?>" class="button button-small"><?php echo esc_html__('View', 'expert-appraiser-ai'); ?></a>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+                
+                <?php
+                // Pagination
+                echo '<div class="tablenav">';
+                echo '<div class="tablenav-pages">';
+                echo paginate_links(array(
+                    'base' => add_query_arg('paged', '%#%'),
+                    'format' => '',
+                    'prev_text' => '&laquo;',
+                    'next_text' => '&raquo;',
+                    'total' => $total_pages,
+                    'current' => $page
+                ));
+                echo '</div>';
+                echo '</div>';
+                ?>
+            <?php endif; ?>
+        </div>
+        <?php
     }
     
     /**
-     * Handle appraisal deletion
+     * View single appraisal
+     *
+     * @param int $appraisal_id
      */
-    public function handle_delete_appraisal() {
-        // Check if user has permission
-        if (!current_user_can('edit_posts')) {
-            wp_die(__('You do not have permission to delete appraisals.', 'expert-appraiser-ai'));
-        }
-        
-        // Get post ID
-        $post_id = isset($_GET['post_id']) ? absint($_GET['post_id']) : 0;
-        
-        if (!$post_id) {
-            wp_die(__('Invalid appraisal ID.', 'expert-appraiser-ai'));
-        }
-        
-        // Verify nonce
-        if (!wp_verify_nonce($_GET['_wpnonce'], 'delete_appraisal_' . $post_id)) {
-            wp_die(__('Security check failed.', 'expert-appraiser-ai'));
-        }
-        
-        // Check if post exists and is correct type
-        $post = get_post($post_id);
-        
-        if (!$post || $post->post_type !== 'expert_appraisal') {
-            wp_die(__('Invalid appraisal.', 'expert-appraiser-ai'));
-        }
-        
-        // Check if current user is author or admin
-        if (!current_user_can('manage_options') && $post->post_author != get_current_user_id()) {
-            wp_die(__('You do not have permission to delete this appraisal.', 'expert-appraiser-ai'));
-        }
-        
-        // Delete the post
-        wp_delete_post($post_id, true);
-        
-        // Redirect back to appraisals page
-        wp_redirect(admin_url('admin.php?page=expert-appraiser-items&deleted=1'));
-        exit;
-    }
-    
-    /**
-     * Add custom capabilities to roles
-     */
-    public function add_custom_capabilities() {
-        // Get role objects
-        $admin = get_role('administrator');
-        $editor = get_role('editor');
-        $author = get_role('author');
-        $contributor = get_role('contributor');
-        
-        // Define custom capability
-        $appraise_cap = 'use_appraiser';
-        
-        // Add to admin role (if not already there)
-        if ($admin && !$admin->has_cap($appraise_cap)) {
-            $admin->add_cap($appraise_cap);
-            $admin->add_cap('manage_appraisals');
-        }
-        
-        // Add to editor role
-        if ($editor && !$editor->has_cap($appraise_cap)) {
-            $editor->add_cap($appraise_cap);
-            $editor->add_cap('manage_appraisals');
-        }
-        
-        // Add to author role
-        if ($author && !$author->has_cap($appraise_cap)) {
-            $author->add_cap($appraise_cap);
-        }
-        
-        // Add to contributor with limitation
-        if ($contributor && !$contributor->has_cap($appraise_cap)) {
-            $contributor->add_cap($appraise_cap);
-        }
-    }
-    
-    /**
-     * Register rate limiting
-     */
-    public function register_rate_limiting() {
-        // Only apply rate limiting to AJAX requests
-        if (defined('DOING_AJAX') && DOING_AJAX) {
-            add_action('wp_ajax_expert_appraiser_generate_appraisal', array($this, 'check_rate_limit'), 5);
-            add_action('wp_ajax_nopriv_expert_appraiser_generate_appraisal', array($this, 'check_rate_limit'), 5);
-        }
-    }
-    
-    /**
-     * Check rate limit before processing appraisal request
-     */
-    public function check_rate_limit() {
-        $user_id = get_current_user_id();
-        $rate_limit = get_option('expert_appraiser_rate_limit', 5); // Default: 5 per minute
-        $daily_limit = get_option('expert_appraiser_daily_limit', 10); // Default: 10 per day
-        
-        // Get current timestamp
-        $now = time();
-        $today = strtotime('today midnight');
-        
-        // Get user's usage data
-        $user_usage = get_user_meta($user_id, 'expert_appraiser_usage', true);
-        
-        if (!is_array($user_usage)) {
-            $user_usage = array(
-                'minute_requests' => array(),
-                'daily_count' => 0,
-                'daily_reset' => $today
-            );
-        }
-        
-        // Reset daily count if it's a new day
-        if ($user_usage['daily_reset'] < $today) {
-            $user_usage['daily_count'] = 0;
-            $user_usage['daily_reset'] = $today;
-        }
-        
-        // Check daily limit
-        if ($user_usage['daily_count'] >= $daily_limit && !current_user_can('manage_options')) {
-            wp_send_json_error(array('message' => __('Daily usage limit reached. Please try again tomorrow.', 'expert-appraiser-ai')));
-            exit;
-        }
-        
-        // Clean up old minute requests (older than 1 minute)
-        $minute_ago = $now - 60;
-        $user_usage['minute_requests'] = array_filter($user_usage['minute_requests'], function($time) use ($minute_ago) {
-            return $time > $minute_ago;
-        });
-        
-        // Check rate limit (requests per minute)
-        if (count($user_usage['minute_requests']) >= $rate_limit && !current_user_can('manage_options')) {
-            wp_send_json_error(array('message' => __('Rate limit exceeded. Please wait a moment before trying again.', 'expert-appraiser-ai')));
-            exit;
-        }
-        
-        // If we got here, update the usage data
-        $user_usage['minute_requests'][] = $now;
-        $user_usage['daily_count']++;
-        
-        // Save updated usage data
-        update_user_meta($user_id, 'expert_appraiser_usage', $user_usage);
-    }
-    
-    /**
-     * Get API key
-     */
-    public static function get_api_key() {
+    private function view_single_appraisal($appraisal_id) {
         global $wpdb;
-        $table_name = $wpdb->prefix . 'expert_appraiser_api_keys';
-        return $wpdb->get_var("SELECT api_key FROM $table_name ORDER BY id DESC LIMIT 1");
+        $table_name = $wpdb->prefix . 'expert_appraisals';
+        
+        $appraisal = $wpdb->get_row($wpdb->prepare(
+            "SELECT * FROM $table_name WHERE id = %d",
+            $appraisal_id
+        ));
+        
+        if (!$appraisal) {
+            wp_die(__('Appraisal not found.', 'expert-appraiser-ai'));
+        }
+        
+        $user_info = get_userdata($appraisal->user_id);
+        $username = $user_info ? $user_info->display_name : __('Unknown', 'expert-appraiser-ai');
+        $upload_dir = wp_upload_dir();
+        $image_url = $upload_dir['baseurl'] . '/' . $appraisal->image_path;
+        ?>
+        <div class="wrap">
+            <h1><?php echo esc_html($appraisal->item_name); ?></h1>
+            
+            <p>
+                <a href="<?php echo esc_url(admin_url('admin.php?page=expert-appraiser-items')); ?>" class="button"><?php echo esc_html__('Back to List', 'expert-appraiser-ai'); ?></a>
+            </p>
+            
+            <div class="card">
+                <h3><?php echo esc_html__('Appraisal Details', 'expert-appraiser-ai'); ?></h3>
+                <p>
+                    <strong><?php echo esc_html__('User:', 'expert-appraiser-ai'); ?></strong> <?php echo esc_html($username); ?><br>
+                    <strong><?php echo esc_html__('Date:', 'expert-appraiser-ai'); ?></strong> <?php echo esc_html(date_i18n(get_option('date_format') . ' ' . get_option('time_format'), strtotime($appraisal->created_at))); ?>
+                </p>
+            </div>
+            
+            <div class="card">
+                <div style="float: right; margin: 0 0 20px 20px; max-width: 300px;">
+                    <img src="<?php echo esc_url($image_url); ?>" style="max-width: 100%; height: auto;" />
+                </div>
+                
+                <div class="appraisal-content">
+                    <?php echo wpautop(wp_kses_post($appraisal->appraisal_text)); ?>
+                </div>
+                
+                <div style="clear: both;"></div>
+            </div>
+        </div>
+        <?php
     }
 }
