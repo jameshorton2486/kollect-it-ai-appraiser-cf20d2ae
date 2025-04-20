@@ -1,3 +1,4 @@
+
 <?php
 /**
  * Uninstall file for Expert Appraiser AI
@@ -43,3 +44,4 @@ $wpdb->query("DELETE FROM $wpdb->postmeta WHERE meta_key LIKE '_expert_appraiser
 
 // Flush rewrite rules
 flush_rewrite_rules();
+
