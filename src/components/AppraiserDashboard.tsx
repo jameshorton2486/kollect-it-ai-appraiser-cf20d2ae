@@ -5,12 +5,10 @@ import { AppraisalForm } from "./AppraisalForm";
 import { AppraisalResults } from "./AppraisalResults";
 import { showNotification } from "@/utils/notifications";
 import { generateAppraisal } from "@/services/appraisalService";
-import { useClipboardImage } from "@/hooks/useClipboardImage";
 
 export const AppraiserDashboard = () => {
   const [appraisalResult, setAppraisalResult] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
-  const { handlePaste } = useClipboardImage();
 
   const handleAppraisalSubmit = async (data: {
     title: string;
@@ -21,7 +19,7 @@ export const AppraiserDashboard = () => {
     showNotification("Generating appraisal...", "info");
 
     try {
-      const result = await generateAppraisal(data.image);
+      const result = await generateAppraisal(data.image, data.title);
       
       if (result.error) {
         showNotification(result.error, "error");

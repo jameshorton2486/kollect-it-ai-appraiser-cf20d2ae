@@ -1,16 +1,16 @@
-
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ImageIcon, XCircle } from "lucide-react";
 
 interface ImagePreviewProps {
   imageData: string;
-  onRemove: () => void;
+  onRemove?: () => void;
+  className?: string;
 }
 
-export const ImagePreview = ({ imageData, onRemove }: ImagePreviewProps) => {
+export const ImagePreview = ({ imageData, onRemove, className }: ImagePreviewProps) => {
   return (
-    <Card className="relative overflow-hidden">
+    <Card className={`relative overflow-hidden ${className}`}>
       <Button
         variant="destructive"
         size="icon"
