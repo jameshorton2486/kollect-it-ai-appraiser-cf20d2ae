@@ -1,5 +1,6 @@
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ImageUploader } from "./ImageUploader";
 import { AppraisalResults } from "./AppraisalResults";
 import { useState } from "react";
@@ -9,37 +10,44 @@ export const AppraiserDashboard = () => {
   const [appraisalResult, setAppraisalResult] = useState<string | null>(null);
 
   return (
-    <div className="container mx-auto py-8 px-4">
+    <div className="container mx-auto py-8 px-4 min-w-[768px]">
       <h1 className="text-4xl font-bold mb-8 text-center">Kollect-It Expert Appraiser</h1>
       
-      <div className="grid gap-8 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Image Upload</CardTitle>
-            <CardDescription>
-              Upload or paste an image of the item you want to appraise
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ImageUploader 
-              onImageSelect={setSelectedImage}
-              onAppraisalComplete={setAppraisalResult}
-            />
-          </CardContent>
-        </Card>
+      <Card className="p-6">
+        <Tabs defaultValue="upload" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="upload">Image Upload</TabsTrigger>
+            <TabsTrigger value="results">Appraisal Results</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="upload" className="mt-6">
+            <Card>
+              <div className="p-6">
+                <h2 className="text-2xl font-semibold mb-2">Upload Image</h2>
+                <p className="text-muted-foreground mb-6">
+                  Upload or paste an image of the item you want to appraise
+                </p>
+                <ImageUploader 
+                  onImageSelect={setSelectedImage}
+                  onAppraisalComplete={setAppraisalResult}
+                />
+              </div>
+            </Card>
+          </TabsContent>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Appraisal Results</CardTitle>
-            <CardDescription>
-              Professional appraisal report with detailed analysis
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <AppraisalResults result={appraisalResult} />
-          </CardContent>
-        </Card>
-      </div>
+          <TabsContent value="results" className="mt-6">
+            <Card>
+              <div className="p-6">
+                <h2 className="text-2xl font-semibold mb-2">Appraisal Results</h2>
+                <p className="text-muted-foreground mb-6">
+                  Professional appraisal report with detailed analysis
+                </p>
+                <AppraisalResults result={appraisalResult} />
+              </div>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </Card>
     </div>
   );
 };
