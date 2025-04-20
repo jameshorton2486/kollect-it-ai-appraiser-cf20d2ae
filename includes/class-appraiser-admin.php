@@ -17,6 +17,15 @@ class Appraiser_Admin {
         // AJAX handlers for admin
         add_action('wp_ajax_expert_appraiser_save_api_key', array($this, 'save_api_key'));
         add_action('wp_ajax_expert_appraiser_test_api_key', array($this, 'test_api_key'));
+        
+        // Handle appraisal deletion
+        add_action('admin_post_expert_appraiser_delete_appraisal', array($this, 'handle_delete_appraisal'));
+        
+        // Add custom user capabilities
+        add_action('admin_init', array($this, 'add_custom_capabilities'));
+        
+        // Register rate limiting
+        add_action('init', array($this, 'register_rate_limiting'));
     }
     
     /**
@@ -26,7 +35,7 @@ class Appraiser_Admin {
         add_menu_page(
             __('Expert Appraiser AI', 'expert-appraiser-ai'),
             __('Expert Appraiser', 'expert-appraiser-ai'),
-            'manage_options',
+            'use_appraiser', // Custom capability
             'expert-appraiser',
             array($this, 'render_admin_page'),
             'dashicons-search',
@@ -37,7 +46,7 @@ class Appraiser_Admin {
             'expert-appraiser',
             __('Appraisals', 'expert-appraiser-ai'),
             __('Appraisals', 'expert-appraiser-ai'),
-            'manage_options',
+            'use_appraiser', // Custom capability
             'expert-appraiser-items',
             array($this, 'render_appraisals_page')
         );
@@ -46,9 +55,19 @@ class Appraiser_Admin {
             'expert-appraiser',
             __('Settings', 'expert-appraiser-ai'),
             __('Settings', 'expert-appraiser-ai'),
-            'manage_options',
+            'manage_options', // Only admin can access settings
             'expert-appraiser-settings',
             array($this, 'render_settings_page')
+        );
+        
+        // Add user management page for admins only
+        add_submenu_page(
+            'expert-appraiser',
+            __('User Management', 'expert-appraiser-ai'),
+            __('User Management', 'expert-appraiser-ai'),
+            'manage_options', // Only admin can access
+            'expert-appraiser-users',
+            array($this, 'render_user_management_page')
         );
     }
     
@@ -60,6 +79,19 @@ class Appraiser_Admin {
             'type' => 'string',
             'default' => 'gpt-4o-mini',
             'sanitize_callback' => 'sanitize_text_field'
+        ));
+        
+        // Add usage limit settings
+        register_setting('expert_appraiser_settings', 'expert_appraiser_daily_limit', array(
+            'type' => 'integer',
+            'default' => 10,
+            'sanitize_callback' => 'absint'
+        ));
+        
+        register_setting('expert_appraiser_settings', 'expert_appraiser_rate_limit', array(
+            'type' => 'integer',
+            'default' => 5, // 5 requests per minute
+            'sanitize_callback' => 'absint'
         ));
     }
     
@@ -82,6 +114,13 @@ class Appraiser_Admin {
      */
     public function render_settings_page() {
         include EXPERT_APPRAISER_PLUGIN_DIR . 'templates/admin-settings.php';
+    }
+    
+    /**
+     * Render user management page
+     */
+    public function render_user_management_page() {
+        include EXPERT_APPRAISER_PLUGIN_DIR . 'templates/admin-user-management.php';
     }
     
     /**
@@ -183,6 +222,149 @@ class Appraiser_Admin {
         }
         
         wp_send_json_success(array('message' => 'API key is valid and working.'));
+    }
+    
+    /**
+     * Handle appraisal deletion
+     */
+    public function handle_delete_appraisal() {
+        // Check if user has permission
+        if (!current_user_can('edit_posts')) {
+            wp_die(__('You do not have permission to delete appraisals.', 'expert-appraiser-ai'));
+        }
+        
+        // Get post ID
+        $post_id = isset($_GET['post_id']) ? absint($_GET['post_id']) : 0;
+        
+        if (!$post_id) {
+            wp_die(__('Invalid appraisal ID.', 'expert-appraiser-ai'));
+        }
+        
+        // Verify nonce
+        if (!wp_verify_nonce($_GET['_wpnonce'], 'delete_appraisal_' . $post_id)) {
+            wp_die(__('Security check failed.', 'expert-appraiser-ai'));
+        }
+        
+        // Check if post exists and is correct type
+        $post = get_post($post_id);
+        
+        if (!$post || $post->post_type !== 'expert_appraisal') {
+            wp_die(__('Invalid appraisal.', 'expert-appraiser-ai'));
+        }
+        
+        // Check if current user is author or admin
+        if (!current_user_can('manage_options') && $post->post_author != get_current_user_id()) {
+            wp_die(__('You do not have permission to delete this appraisal.', 'expert-appraiser-ai'));
+        }
+        
+        // Delete the post
+        wp_delete_post($post_id, true);
+        
+        // Redirect back to appraisals page
+        wp_redirect(admin_url('admin.php?page=expert-appraiser-items&deleted=1'));
+        exit;
+    }
+    
+    /**
+     * Add custom capabilities to roles
+     */
+    public function add_custom_capabilities() {
+        // Get role objects
+        $admin = get_role('administrator');
+        $editor = get_role('editor');
+        $author = get_role('author');
+        $contributor = get_role('contributor');
+        
+        // Define custom capability
+        $appraise_cap = 'use_appraiser';
+        
+        // Add to admin role (if not already there)
+        if ($admin && !$admin->has_cap($appraise_cap)) {
+            $admin->add_cap($appraise_cap);
+            $admin->add_cap('manage_appraisals');
+        }
+        
+        // Add to editor role
+        if ($editor && !$editor->has_cap($appraise_cap)) {
+            $editor->add_cap($appraise_cap);
+            $editor->add_cap('manage_appraisals');
+        }
+        
+        // Add to author role
+        if ($author && !$author->has_cap($appraise_cap)) {
+            $author->add_cap($appraise_cap);
+        }
+        
+        // Add to contributor with limitation
+        if ($contributor && !$contributor->has_cap($appraise_cap)) {
+            $contributor->add_cap($appraise_cap);
+        }
+    }
+    
+    /**
+     * Register rate limiting
+     */
+    public function register_rate_limiting() {
+        // Only apply rate limiting to AJAX requests
+        if (defined('DOING_AJAX') && DOING_AJAX) {
+            add_action('wp_ajax_expert_appraiser_generate_appraisal', array($this, 'check_rate_limit'), 5);
+            add_action('wp_ajax_nopriv_expert_appraiser_generate_appraisal', array($this, 'check_rate_limit'), 5);
+        }
+    }
+    
+    /**
+     * Check rate limit before processing appraisal request
+     */
+    public function check_rate_limit() {
+        $user_id = get_current_user_id();
+        $rate_limit = get_option('expert_appraiser_rate_limit', 5); // Default: 5 per minute
+        $daily_limit = get_option('expert_appraiser_daily_limit', 10); // Default: 10 per day
+        
+        // Get current timestamp
+        $now = time();
+        $today = strtotime('today midnight');
+        
+        // Get user's usage data
+        $user_usage = get_user_meta($user_id, 'expert_appraiser_usage', true);
+        
+        if (!is_array($user_usage)) {
+            $user_usage = array(
+                'minute_requests' => array(),
+                'daily_count' => 0,
+                'daily_reset' => $today
+            );
+        }
+        
+        // Reset daily count if it's a new day
+        if ($user_usage['daily_reset'] < $today) {
+            $user_usage['daily_count'] = 0;
+            $user_usage['daily_reset'] = $today;
+        }
+        
+        // Check daily limit
+        if ($user_usage['daily_count'] >= $daily_limit && !current_user_can('manage_options')) {
+            wp_send_json_error(array('message' => __('Daily usage limit reached. Please try again tomorrow.', 'expert-appraiser-ai')));
+            exit;
+        }
+        
+        // Clean up old minute requests (older than 1 minute)
+        $minute_ago = $now - 60;
+        $user_usage['minute_requests'] = array_filter($user_usage['minute_requests'], function($time) use ($minute_ago) {
+            return $time > $minute_ago;
+        });
+        
+        // Check rate limit (requests per minute)
+        if (count($user_usage['minute_requests']) >= $rate_limit && !current_user_can('manage_options')) {
+            wp_send_json_error(array('message' => __('Rate limit exceeded. Please wait a moment before trying again.', 'expert-appraiser-ai')));
+            exit;
+        }
+        
+        // If we got here, update the usage data
+        $user_usage['minute_requests'][] = $now;
+        $user_usage['daily_count']++;
+        
+        // Save updated usage data
+        update_user_meta($user_id, 'expert_appraiser_usage', $user_usage);
     }
     
     /**

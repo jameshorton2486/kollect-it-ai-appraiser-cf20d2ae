@@ -5,12 +5,23 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-// Get appraisals
+// Check user capabilities for security
+if (!current_user_can('manage_options')) {
+    wp_die(__('You do not have sufficient permissions to access this page.', 'kollect-it-appraiser'));
+}
+
+// Get appraisals with pagination and security measures
+$current_page = isset($_GET['paged']) ? absint($_GET['paged']) : 1;
 $args = array(
     'post_type' => 'kollect_it_appraisal',
     'posts_per_page' => 20,
-    'paged' => isset($_GET['paged']) ? intval($_GET['paged']) : 1
+    'paged' => $current_page,
+    // Add author restriction based on user role
+    'author' => current_user_can('manage_options') ? '' : get_current_user_id()
 );
+
+// Apply nonce verification for any actions
+$action_nonce = wp_create_nonce('kollect_it_appraisal_action');
 
 $appraisals = new WP_Query($args);
 ?>
@@ -23,6 +34,35 @@ $appraisals = new WP_Query($args);
         <h2><?php _e('Saved Appraisals', 'kollect-it-appraiser'); ?></h2>
         
         <?php if ($appraisals->have_posts()) : ?>
+            <div class="tablenav top">
+                <div class="alignleft actions">
+                    <form method="get">
+                        <input type="hidden" name="page" value="<?php echo esc_attr($_GET['page']); ?>">
+                        <?php
+                        // Add user filter for admins only
+                        if (current_user_can('manage_options')) {
+                            $users = get_users(array('fields' => array('ID', 'display_name')));
+                            echo '<select name="author">';
+                            echo '<option value="">' . __('All Users', 'kollect-it-appraiser') . '</option>';
+                            foreach ($users as $user) {
+                                $selected = isset($_GET['author']) && $_GET['author'] == $user->ID ? 'selected' : '';
+                                echo '<option value="' . esc_attr($user->ID) . '" ' . $selected . '>' . esc_html($user->display_name) . '</option>';
+                            }
+                            echo '</select>';
+                        }
+                        ?>
+                        <input type="submit" class="button" value="<?php _e('Filter', 'kollect-it-appraiser'); ?>">
+                    </form>
+                </div>
+                <div class="tablenav-pages">
+                    <span class="displaying-num">
+                        <?php echo sprintf(_n('%s item', '%s items', $appraisals->found_posts, 'kollect-it-appraiser'), 
+                                number_format_i18n($appraisals->found_posts)); ?>
+                    </span>
+                </div>
+                <br class="clear">
+            </div>
+        
             <table class="kollect-it-admin-table">
                 <thead>
                     <tr>
@@ -30,6 +70,7 @@ $appraisals = new WP_Query($args);
                         <th><?php _e('Title', 'kollect-it-appraiser'); ?></th>
                         <th><?php _e('Date', 'kollect-it-appraiser'); ?></th>
                         <th><?php _e('Type', 'kollect-it-appraiser'); ?></th>
+                        <th><?php _e('User', 'kollect-it-appraiser'); ?></th>
                         <th><?php _e('Actions', 'kollect-it-appraiser'); ?></th>
                     </tr>
                 </thead>
@@ -58,9 +99,31 @@ $appraisals = new WP_Query($args);
                                 ?>
                             </td>
                             <td>
+                                <?php 
+                                // Show author info only to admins
+                                if (current_user_can('manage_options')) {
+                                    $author = get_the_author();
+                                    echo esc_html($author);
+                                } else {
+                                    echo esc_html(get_the_author_meta('display_name', get_current_user_id()));
+                                }
+                                ?>
+                            </td>
+                            <td>
                                 <a href="<?php echo get_edit_post_link(); ?>" class="button">
                                     <?php _e('View', 'kollect-it-appraiser'); ?>
                                 </a>
+                                
+                                <?php 
+                                // Only allow delete if user is admin or post author
+                                if (current_user_can('manage_options') || get_current_user_id() == get_post_field('post_author', get_the_ID())) : 
+                                ?>
+                                    <a href="<?php echo wp_nonce_url(admin_url('admin-post.php?action=kollect_it_delete_appraisal&post_id=' . get_the_ID()), 'delete_appraisal_' . get_the_ID()); ?>" 
+                                       class="button delete-appraisal" 
+                                       onclick="return confirm('<?php _e('Are you sure you want to delete this appraisal?', 'kollect-it-appraiser'); ?>');">
+                                        <?php _e('Delete', 'kollect-it-appraiser'); ?>
+                                    </a>
+                                <?php endif; ?>
                             </td>
                         </tr>
                     <?php endwhile; ?>
@@ -76,7 +139,7 @@ $appraisals = new WP_Query($args);
                         'prev_text' => '&laquo;',
                         'next_text' => '&raquo;',
                         'total' => $appraisals->max_num_pages,
-                        'current' => max(1, isset($_GET['paged']) ? intval($_GET['paged']) : 1)
+                        'current' => max(1, $current_page)
                     ));
                     ?>
                 </div>

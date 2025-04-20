@@ -3,6 +3,14 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { FileText, Printer, Copy } from "lucide-react";
 import { showNotification } from "@/utils/notifications";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 interface AppraisalResultsProps {
   result: string | null;
@@ -11,9 +19,72 @@ interface AppraisalResultsProps {
     timestamp?: string;
     templateId?: string;
   };
+  isTableView?: boolean;
+  appraisals?: Array<{
+    id: number;
+    title: string;
+    date: string;
+    type: string;
+    image?: string;
+  }>;
+  onViewAppraisal?: (id: number) => void;
 }
 
-export const AppraisalResults = ({ result, metadata }: AppraisalResultsProps) => {
+export const AppraisalResults = ({ 
+  result, 
+  metadata, 
+  isTableView = false, 
+  appraisals = [],
+  onViewAppraisal
+}: AppraisalResultsProps) => {
+  
+  // If in table view mode, render the admin table
+  if (isTableView && appraisals.length > 0) {
+    return (
+      <Card className="p-4">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Image</TableHead>
+              <TableHead>Title</TableHead>
+              <TableHead>Date</TableHead>
+              <TableHead>Type</TableHead>
+              <TableHead>Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {appraisals.map((appraisal) => (
+              <TableRow key={appraisal.id}>
+                <TableCell>
+                  {appraisal.image ? (
+                    <div className="w-16 h-16 bg-cover bg-center rounded" 
+                         style={{ backgroundImage: `url(${appraisal.image})` }}></div>
+                  ) : (
+                    <div className="w-16 h-16 bg-gray-100 flex items-center justify-center rounded">
+                      <span className="text-xs text-gray-500">No Image</span>
+                    </div>
+                  )}
+                </TableCell>
+                <TableCell>{appraisal.title}</TableCell>
+                <TableCell>{appraisal.date}</TableCell>
+                <TableCell>{appraisal.type}</TableCell>
+                <TableCell>
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    onClick={() => onViewAppraisal && onViewAppraisal(appraisal.id)}
+                  >
+                    View
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </Card>
+    );
+  }
+
   if (!result) {
     return (
       <div className="text-center text-gray-500">
