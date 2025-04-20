@@ -10,6 +10,7 @@ import { useClipboardImage } from "@/hooks/useClipboardImage";
 
 export const AppraiserDashboard = () => {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [optimizedImage, setOptimizedImage] = useState<string | null>(null);
   const [appraisalResult, setAppraisalResult] = useState<string | null>(null);
   const { image: pastedImage, handlePaste } = useClipboardImage();
 
@@ -20,6 +21,10 @@ export const AppraiserDashboard = () => {
   }, [pastedImage]);
 
   const handleGenerate = () => {
+    if (!optimizedImage) {
+      showNotification("Please wait for image processing to complete", "info");
+      return;
+    }
     showNotification("Generating appraisal...", "info");
   };
 
@@ -55,7 +60,10 @@ export const AppraiserDashboard = () => {
                 <p className="text-muted-foreground mb-6">
                   Upload or paste an image of the item you want to appraise
                 </p>
-                <ImagePreview imageData={selectedImage} />
+                <ImagePreview 
+                  imageData={selectedImage} 
+                  onOptimizedImage={setOptimizedImage}
+                />
                 <div className="mt-6">
                   <ImageUploader 
                     onImageSelect={setSelectedImage}
