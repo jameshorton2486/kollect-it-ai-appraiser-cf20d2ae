@@ -2,6 +2,8 @@
 <?php
 class Appraiser_Image_Processor {
     const MAX_IMAGE_SIZE = 20971520; // 20MB
+    const MAX_WIDTH = 2048;
+    const MAX_HEIGHT = 2048;
     
     public function clean_image_data($image_data) {
         // Remove data URL prefix if present
@@ -37,12 +39,36 @@ class Appraiser_Image_Processor {
             return new WP_Error('file_too_large', 'Image file size exceeds maximum limit');
         }
         
+        // Create temporary file to process image
+        $temp_file = wp_tempnam();
+        file_put_contents($temp_file, $image_data_decoded);
+        
+        // Process and optimize the image
+        $editor = wp_get_image_editor($temp_file);
+        if (is_wp_error($editor)) {
+            unlink($temp_file);
+            return $editor;
+        }
+        
+        // Resize if needed
+        $size = $editor->get_size();
+        if ($size['width'] > self::MAX_WIDTH || $size['height'] > self::MAX_HEIGHT) {
+            $editor->resize(self::MAX_WIDTH, self::MAX_HEIGHT, false);
+        }
+        
+        // Set quality
+        $editor->set_quality(90);
+        
         // Create unique filename
         $filename = 'appraisal-' . $post_id . '-' . time() . '.jpg';
         $file_path = $upload_path . '/' . $filename;
         
-        if (!file_put_contents($file_path, $image_data_decoded)) {
-            return new WP_Error('file_save_failed', 'Failed to save image file');
+        // Save optimized image
+        $result = $editor->save($file_path, 'image/jpeg');
+        unlink($temp_file);
+        
+        if (is_wp_error($result)) {
+            return $result;
         }
         
         // Prepare and insert attachment
