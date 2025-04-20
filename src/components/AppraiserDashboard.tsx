@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -10,13 +11,19 @@ import { useClipboardImage } from "@/hooks/useClipboardImage";
 import { generateAppraisal } from "@/services/appraisalService";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Settings } from "lucide-react";
 import { storeApiKey, getApiKey, hasApiKey } from "@/services/configService";
+import { ApiSettings } from "./ApiSettings";
 
 export const AppraiserDashboard = () => {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [optimizedImage, setOptimizedImage] = useState<string | null>(null);
   const [appraisalResult, setAppraisalResult] = useState<string | null>(null);
   const [apiKey, setApiKey] = useState<string>('');
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [showApiSettings, setShowApiSettings] = useState(false);
+  const { image: pastedImage, handlePaste } = useClipboardImage();
 
   useEffect(() => {
     const savedApiKey = getApiKey();
@@ -25,12 +32,14 @@ export const AppraiserDashboard = () => {
     }
   }, []);
 
-  const handleApiKeyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newApiKey = e.target.value;
-    setApiKey(newApiKey);
-    if (newApiKey) {
-      storeApiKey(newApiKey);
+  useEffect(() => {
+    if (pastedImage) {
+      setSelectedImage(pastedImage);
     }
+  }, [pastedImage]);
+
+  const handleApiKeyChange = (newApiKey: string) => {
+    setApiKey(newApiKey);
   };
 
   const handleGenerate = async () => {
@@ -73,19 +82,29 @@ export const AppraiserDashboard = () => {
       
       <Card className="p-6">
         <div className="mb-6">
-          <div className="mb-4">
-            <Label htmlFor="apiKey">OpenAI API Key</Label>
-            <Input
-              id="apiKey"
-              type="password"
-              value={apiKey}
-              onChange={handleApiKeyChange}
-              placeholder="Enter your OpenAI API key"
-              className="max-w-md"
-            />
-            <p className="text-sm text-muted-foreground mt-1">
-              Note: For better security, consider using Supabase to store your API keys.
-            </p>
+          <div className="mb-4 flex items-center justify-between">
+            <div className="flex-1 max-w-md">
+              <Label htmlFor="apiKey">OpenAI API Key</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="apiKey"
+                  type="password"
+                  value={apiKey}
+                  onChange={(e) => storeApiKey(e.target.value)}
+                  placeholder="Enter your OpenAI API key"
+                />
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setShowApiSettings(true)}
+                >
+                  <Settings className="h-4 w-4" />
+                </Button>
+              </div>
+              <p className="text-sm text-muted-foreground mt-1">
+                Note: For better security, consider using Supabase to store your API keys.
+              </p>
+            </div>
           </div>
           <ControlPanel 
             onPaste={handlePaste}
@@ -137,6 +156,12 @@ export const AppraiserDashboard = () => {
           </TabsContent>
         </Tabs>
       </Card>
+
+      <ApiSettings
+        open={showApiSettings}
+        onOpenChange={setShowApiSettings}
+        onApiKeyChange={handleApiKeyChange}
+      />
     </div>
   );
 };
