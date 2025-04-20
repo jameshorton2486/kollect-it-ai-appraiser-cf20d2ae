@@ -1,6 +1,6 @@
 
 import { Button } from "@/components/ui/button";
-import { CloudUpload, AutoFixHigh, SaveAlt } from "lucide-react";
+import { CloudUpload, AutoFixIcon, SaveIcon } from "lucide-react";
 
 interface ControlPanelProps {
   onPaste: () => void;
@@ -31,7 +31,7 @@ export const ControlPanel = ({
         onClick={onGenerate}
         disabled={!imageExists}
       >
-        <AutoFixHigh className="mr-2" />
+        <AutoFixIcon className="mr-2" />
         Generate Appraisal
       </Button>
       
@@ -40,7 +40,7 @@ export const ControlPanel = ({
         onClick={onSave}
         disabled={!appraisalExists}
       >
-        <SaveAlt className="mr-2" />
+        <SaveIcon className="mr-2" />
         Save Appraisal
       </Button>
     </div>
