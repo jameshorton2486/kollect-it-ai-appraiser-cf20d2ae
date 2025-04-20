@@ -1,4 +1,3 @@
-
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { FileText, Printer, Copy } from "lucide-react";
@@ -11,6 +10,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface AppraisalResultsProps {
   result: string | null;
@@ -30,66 +30,75 @@ interface AppraisalResultsProps {
   onViewAppraisal?: (id: number) => void;
 }
 
-export const AppraisalResults = ({ 
-  result, 
-  metadata, 
-  isTableView = false, 
+export const AppraisalResults = ({
+  result,
+  metadata,
+  isTableView = false,
   appraisals = [],
-  onViewAppraisal
+  onViewAppraisal,
 }: AppraisalResultsProps) => {
-  
-  // If in table view mode, render the admin table
+  const isMobile = useIsMobile();
+
   if (isTableView && appraisals.length > 0) {
     return (
-      <Card className="p-4">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Image</TableHead>
-              <TableHead>Title</TableHead>
-              <TableHead>Date</TableHead>
-              <TableHead>Type</TableHead>
-              <TableHead>Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {appraisals.map((appraisal) => (
-              <TableRow key={appraisal.id}>
-                <TableCell>
-                  {appraisal.image ? (
-                    <div className="w-16 h-16 bg-cover bg-center rounded" 
-                         style={{ backgroundImage: `url(${appraisal.image})` }}></div>
-                  ) : (
-                    <div className="w-16 h-16 bg-gray-100 flex items-center justify-center rounded">
-                      <span className="text-xs text-gray-500">No Image</span>
-                    </div>
-                  )}
-                </TableCell>
-                <TableCell>{appraisal.title}</TableCell>
-                <TableCell>{appraisal.date}</TableCell>
-                <TableCell>{appraisal.type}</TableCell>
-                <TableCell>
-                  <Button 
-                    size="sm" 
-                    variant="outline" 
-                    onClick={() => onViewAppraisal && onViewAppraisal(appraisal.id)}
-                  >
-                    View
-                  </Button>
-                </TableCell>
+      <Card className="p-2 sm:p-4">
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                {!isMobile && <TableHead>Image</TableHead>}
+                <TableHead>Title</TableHead>
+                <TableHead>Date</TableHead>
+                {!isMobile && <TableHead>Type</TableHead>}
+                <TableHead>Actions</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {appraisals.map((appraisal) => (
+                <TableRow key={appraisal.id}>
+                  {!isMobile && (
+                    <TableCell>
+                      {appraisal.image ? (
+                        <div 
+                          className="w-12 h-12 sm:w-16 sm:h-16 bg-cover bg-center rounded" 
+                          style={{ backgroundImage: `url(${appraisal.image})` }}
+                        />
+                      ) : (
+                        <div className="w-12 h-12 sm:w-16 sm:h-16 bg-muted flex items-center justify-center rounded">
+                          <span className="text-xs text-muted-foreground">No Image</span>
+                        </div>
+                      )}
+                    </TableCell>
+                  )}
+                  <TableCell className="font-medium">{appraisal.title}</TableCell>
+                  <TableCell>{appraisal.date}</TableCell>
+                  {!isMobile && <TableCell>{appraisal.type}</TableCell>}
+                  <TableCell>
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => onViewAppraisal && onViewAppraisal(appraisal.id)}
+                      className="w-full sm:w-auto"
+                    >
+                      View
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       </Card>
     );
   }
 
   if (!result) {
     return (
-      <div className="text-center text-gray-500">
-        No appraisal results yet. Upload an image to get started.
-      </div>
+      <Card className="p-4 text-center">
+        <p className="text-muted-foreground">
+          No appraisal results yet. Upload an image to get started.
+        </p>
+      </Card>
     );
   }
 
@@ -155,25 +164,25 @@ export const AppraisalResults = ({
 
   return (
     <Card className="p-4">
-      <div className="prose max-w-none">
+      <div className="prose prose-purple max-w-none dark:prose-invert">
         {result}
       </div>
-      <div className="mt-4 flex gap-2">
-        <Button variant="outline" onClick={handleCopy}>
+      <div className="mt-4 flex flex-wrap gap-2">
+        <Button variant="outline" onClick={handleCopy} className="flex-1 sm:flex-none">
           <Copy className="mr-2 h-4 w-4" />
           Copy
         </Button>
-        <Button variant="outline" onClick={handleExport}>
+        <Button variant="outline" onClick={handleExport} className="flex-1 sm:flex-none">
           <FileText className="mr-2 h-4 w-4" />
           Export
         </Button>
-        <Button variant="outline" onClick={handlePrint}>
+        <Button variant="outline" onClick={handlePrint} className="flex-1 sm:flex-none">
           <Printer className="mr-2 h-4 w-4" />
           Print
         </Button>
       </div>
       {metadata && (
-        <div className="mt-4 text-sm text-gray-500">
+        <div className="mt-4 text-sm text-muted-foreground space-y-1">
           <p>Generated: {new Date(metadata.timestamp || '').toLocaleString()}</p>
           {metadata.model && <p>Model: {metadata.model}</p>}
           {metadata.templateId && <p>Template: {metadata.templateId}</p>}
