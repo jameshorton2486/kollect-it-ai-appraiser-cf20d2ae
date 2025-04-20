@@ -1,8 +1,8 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ImageUploader } from "./ImageUploader";
+import { ImagePreview } from "./ImagePreview";
 import { AppraisalResults } from "./AppraisalResults";
 import { ControlPanel } from "./ControlPanel";
 import { showNotification } from "@/utils/notifications";
@@ -13,7 +13,6 @@ export const AppraiserDashboard = () => {
   const [appraisalResult, setAppraisalResult] = useState<string | null>(null);
   const { image: pastedImage, handlePaste } = useClipboardImage();
 
-  // Update selectedImage when an image is pasted
   useEffect(() => {
     if (pastedImage) {
       setSelectedImage(pastedImage);
@@ -56,10 +55,13 @@ export const AppraiserDashboard = () => {
                 <p className="text-muted-foreground mb-6">
                   Upload or paste an image of the item you want to appraise
                 </p>
-                <ImageUploader 
-                  onImageSelect={setSelectedImage}
-                  onAppraisalComplete={setAppraisalResult}
-                />
+                <ImagePreview imageData={selectedImage} />
+                <div className="mt-6">
+                  <ImageUploader 
+                    onImageSelect={setSelectedImage}
+                    onAppraisalComplete={setAppraisalResult}
+                  />
+                </div>
               </div>
             </Card>
           </TabsContent>
