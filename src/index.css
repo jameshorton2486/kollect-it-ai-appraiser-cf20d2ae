@@ -70,8 +70,20 @@
     @apply scroll-m-20 text-2xl font-semibold tracking-tight;
   }
 
+  h4 {
+    @apply scroll-m-20 text-xl font-semibold tracking-tight;
+  }
+
   p {
     @apply leading-7 [&:not(:first-child)]:mt-6;
+  }
+
+  blockquote {
+    @apply mt-6 border-l-2 pl-6 italic;
+  }
+
+  ul {
+    @apply my-6 ml-6 list-disc [&>li]:mt-2;
   }
 
   /* Spacing System */
@@ -81,5 +93,17 @@
 
   .container-padding {
     @apply px-4 md:px-6 lg:px-8;
+  }
+
+  .content-spacing {
+    @apply space-y-4 md:space-y-6 lg:space-y-8;
+  }
+
+  .stack-vertical {
+    @apply flex flex-col gap-4;
+  }
+
+  .stack-horizontal {
+    @apply flex gap-4;
   }
 }
