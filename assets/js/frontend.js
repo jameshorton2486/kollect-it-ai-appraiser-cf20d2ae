@@ -1,212 +1,144 @@
-
-/**
- * Expert Appraiser AI Frontend JavaScript
- */
 (function($) {
     'use strict';
     
     $(document).ready(function() {
-        const form = $('#expert-appraiser-form');
-        const imageInput = $('#item_image');
-        const dropzone = $('#expert-appraiser-dropzone');
-        const preview = $('#expert-appraiser-image-preview');
-        const results = $('#expert-appraiser-results');
-        const appraisalContent = $('#expert-appraiser-appraisal-content');
-        const submitButton = $('#expert-appraiser-submit');
-        const loadingIndicator = $('#expert-appraiser-loading');
-        const saveButton = $('#expert-appraiser-save');
-        const printButton = $('#expert-appraiser-print');
+        const $appraiserForm = $('#expert-appraiser-form');
+        const $imagePreview = $('#image-preview');
+        const $pasteArea = $('#paste-area');
+        const $submitButton = $('#submit-appraisal');
+        const $resetButton = $('#reset-appraisal');
+        const $resultsArea = $('#appraisal-results');
+        const $loadingIndicator = $('#loading-indicator');
+        const $imageData = $('#image-data');
         
-        // Store the image data
-        let imageData = '';
+        // Handle file uploads
+        $('#image-upload').on('change', function(e) {
+            const file = this.files[0];
+            if (file) {
+                handleImageFile(file);
+            }
+        });
         
         // Handle drag and drop
-        dropzone.on('dragover', function(e) {
+        $pasteArea.on('dragover', function(e) {
             e.preventDefault();
-            e.stopPropagation();
-            $(this).css('border-color', '#0073aa');
+            $(this).addClass('dragover');
         });
         
-        dropzone.on('dragleave', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            $(this).css('border-color', '#ccc');
+        $pasteArea.on('dragleave', function() {
+            $(this).removeClass('dragover');
         });
         
-        dropzone.on('drop', function(e) {
+        $pasteArea.on('drop', function(e) {
             e.preventDefault();
-            e.stopPropagation();
-            $(this).css('border-color', '#ccc');
+            $(this).removeClass('dragover');
             
-            const files = e.originalEvent.dataTransfer.files;
-            if (files.length) {
-                handleFiles(files);
+            const file = e.originalEvent.dataTransfer.files[0];
+            if (file && file.type.startsWith('image/')) {
+                handleImageFile(file);
             }
         });
         
-        // Click on dropzone
-        dropzone.on('click', function() {
-            imageInput.click();
-        });
-        
-        // File input change
-        imageInput.on('change', function() {
-            if (this.files.length) {
-                handleFiles(this.files);
+        // Handle paste events globally
+        $(document).on('paste', function(e) {
+            const items = (e.originalEvent.clipboardData || e.clipboardData).items;
+            
+            for (let i = 0; i < items.length; i++) {
+                if (items[i].type.indexOf('image') !== -1) {
+                    const blob = items[i].getAsFile();
+                    handleImageFile(blob);
+                    break;
+                }
             }
         });
         
-        // Handle selected files
-        function handleFiles(files) {
-            const file = files[0];
+        // Handle form submission
+        $appraiserForm.on('submit', function(e) {
+            e.preventDefault();
             
-            // Check if it's an image
-            if (!file.type.match('image.*')) {
-                alert('Please select an image file.');
+            if (!$imageData.val()) {
+                alert('Please paste or upload an image first.');
                 return;
             }
             
-            // Read and display the image
+            submitAppraisal();
+        });
+        
+        // Reset form
+        $resetButton.on('click', function() {
+            resetForm();
+        });
+        
+        // Update the model reference in the submitAppraisal function
+        function submitAppraisal() {
+            $loadingIndicator.show();
+            $submitButton.prop('disabled', true);
+            
+            $.ajax({
+                url: expertAppraiserData.ajaxurl,
+                type: 'POST',
+                data: {
+                    action: 'process_appraisal',
+                    nonce: expertAppraiserData.nonce,
+                    image_data: $imageData.val(),
+                    user_notes: $('#user-notes').val(),
+                    model: 'gpt-4o-mini' // Updated to use the recommended model
+                },
+                success: function(response) {
+                    $loadingIndicator.hide();
+                    
+                    if (response.success) {
+                        $resultsArea.html(response.data.html);
+                        $appraiserForm.hide();
+                        $resultsArea.show();
+                        
+                        // Set up export buttons
+                        setupExportButtons(response.data.appraisal);
+                    } else {
+                        alert(response.data.message || 'An error occurred');
+                        $submitButton.prop('disabled', false);
+                    }
+                },
+                error: function() {
+                    $loadingIndicator.hide();
+                    alert('Server error. Please try again.');
+                    $submitButton.prop('disabled', false);
+                }
+            });
+        }
+        
+        // Helper functions
+        function handleImageFile(file) {
+            if (!file) return;
+            
             const reader = new FileReader();
             reader.onload = function(e) {
-                imageData = e.target.result;
-                preview.html('<img src="' + imageData + '" alt="Item preview"/>');
-                preview.show();
-                dropzone.hide();
+                displayImagePreview(e.target.result);
+                $imageData.val(e.target.result);
+                $submitButton.prop('disabled', false);
             };
             reader.readAsDataURL(file);
         }
         
-        // Form submission
-        form.on('submit', function(e) {
-            e.preventDefault();
-            
-            if (!imageData) {
-                alert('Please upload an image of the item.');
-                return;
-            }
-            
-            // Get form values
-            const title = $('#item_title').val();
-            const description = $('#item_description').val();
-            const templateId = $('#expert-appraiser-template-select').val();
-            
-            // Show loading indicator
-            submitButton.hide();
-            loadingIndicator.show();
-            
-            // Generate appraisal
-            $.ajax({
-                url: expertAppraiserSettings.ajaxUrl,
-                type: 'POST',
-                data: {
-                    action: 'expert_appraiser_generate',
-                    nonce: expertAppraiserSettings.nonce,
-                    title: title,
-                    description: description,
-                    template_id: templateId,
-                    image: imageData
-                },
-                success: function(response) {
-                    // Hide loading indicator
-                    loadingIndicator.hide();
-                    submitButton.show();
-                    
-                    if (response.success) {
-                        // Show results
-                        appraisalContent.html(response.data.appraisalText);
-                        results.show();
-                        
-                        // Scroll to results
-                        $('html, body').animate({
-                            scrollTop: results.offset().top - 50
-                        }, 500);
-                    } else {
-                        alert('Error: ' + response.data.message);
-                    }
-                },
-                error: function() {
-                    loadingIndicator.hide();
-                    submitButton.show();
-                    alert('An error occurred. Please try again.');
-                }
-            });
-        });
-        
-        // Save appraisal
-        if (saveButton) {
-            saveButton.on('click', function() {
-                const title = $('#item_title').val();
-                const description = $('#item_description').val();
-                const templateId = $('#expert-appraiser-template-select').val();
-                const appraisal = appraisalContent.html();
-                
-                $(this).prop('disabled', true).text('Saving...');
-                
-                $.ajax({
-                    url: expertAppraiserSettings.ajaxUrl,
-                    type: 'POST',
-                    data: {
-                        action: 'expert_appraiser_save',
-                        nonce: expertAppraiserSettings.nonce,
-                        title: title,
-                        description: description,
-                        template_id: templateId,
-                        image: imageData,
-                        appraisal: appraisal
-                    },
-                    success: function(response) {
-                        if (response.success) {
-                            alert('Appraisal saved successfully!');
-                        } else {
-                            alert('Error: ' + response.data.message);
-                        }
-                        saveButton.prop('disabled', false).text('Save This Appraisal');
-                    },
-                    error: function() {
-                        alert('An error occurred while saving the appraisal.');
-                        saveButton.prop('disabled', false).text('Save This Appraisal');
-                    }
-                });
-            });
+        function displayImagePreview(imageData) {
+            $imagePreview.html(`<img src="${imageData}" alt="Image Preview" />`);
+            $pasteArea.addClass('has-image');
+            $('.instructions', $pasteArea).hide();
         }
         
-        // Print appraisal
-        if (printButton) {
-            printButton.on('click', function() {
-                const title = $('#item_title').val();
-                const appraisal = appraisalContent.html();
-                
-                // Create print window
-                const printWindow = window.open('', '_blank');
-                printWindow.document.write(`
-                    <html>
-                    <head>
-                        <title>Expert Appraisal: ${title}</title>
-                        <style>
-                            body { font-family: Arial, sans-serif; line-height: 1.6; padding: 20px; }
-                            h1 { text-align: center; }
-                            .appraisal-date { text-align: right; margin-bottom: 20px; }
-                            .content { margin-top: 30px; }
-                        </style>
-                    </head>
-                    <body>
-                        <h1>Expert Appraisal Report</h1>
-                        <div class="appraisal-date">Date: ${new Date().toLocaleDateString()}</div>
-                        <h2>${title}</h2>
-                        <div class="content">${appraisal}</div>
-                    </body>
-                    </html>
-                `);
-                
-                // Print and close
-                printWindow.document.close();
-                printWindow.focus();
-                setTimeout(function() {
-                    printWindow.print();
-                    printWindow.close();
-                }, 250);
-            });
+        function resetForm() {
+            $imagePreview.empty();
+            $('.instructions', $pasteArea).show();
+            $pasteArea.removeClass('has-image');
+            $imageData.val('');
+            $('#user-notes').val('');
+            $submitButton.prop('disabled', true);
+            $appraiserForm.show();
+            $resultsArea.hide();
+        }
+        
+        function setupExportButtons(appraisalText) {
+            // Implemented in the results template
         }
     });
 })(jQuery);

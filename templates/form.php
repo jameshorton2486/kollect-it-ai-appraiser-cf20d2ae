@@ -1,6 +1,12 @@
 
 <?php
-// Prevent direct access
+/**
+ * Template for the appraisal form
+ *
+ * @package Expert_Appraiser_AI
+ */
+
+// Exit if accessed directly
 if (!defined('ABSPATH')) {
     exit;
 }

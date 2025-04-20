@@ -1,0 +1,290 @@
+/* Expert Appraiser AI Styles */
+
+.expert-appraiser-container {
+    font-family: Georgia, serif;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 20px;
+    background: #fff;
+    box-shadow: 0 0 10px rgba(0,0,0,0.05);
+    border-radius: 5px;
+}
+
+/* Form Styles */
+.appraisal-form {
+    padding: 20px;
+}
+
+.paste-area {
+    border: 2px dashed #ccc;
+    border-radius: 5px;
+    padding: 20px;
+    text-align: center;
+    background-color: #f9f9f9;
+    position: relative;
+    min-height: 200px;
+    transition: all 0.3s ease;
+}
+
+.paste-area.dragover {
+    border-color: #666;
+    background-color: #f3f3f3;
+}
+
+.paste-area.has-image {
+    padding: 5px;
+    border-style: solid;
+}
+
+.instructions {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 80%;
+}
+
+.hidden-upload {
+    display: none;
+}
+
+.upload-button {
+    background-color: #6b4f3e;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-top: 10px;
+    font-family: Georgia, serif;
+}
+
+.upload-button:hover {
+    background-color: #5a4232;
+}
+
+.image-preview {
+    max-height: 400px;
+    overflow: auto;
+    text-align: center;
+}
+
+.image-preview img {
+    max-width: 100%;
+    height: auto;
+}
+
+.notes-section {
+    margin-top: 20px;
+}
+
+.notes-section label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+    color: #6b4f3e;
+}
+
+.notes-section textarea {
+    width: 100%;
+    height: 100px;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-family: Georgia, serif;
+}
+
+.button-group {
+    margin-top: 20px;
+    text-align: center;
+}
+
+.submit-button {
+    background-color: #6b4f3e;
+    color: white;
+    border: none;
+    padding: 12px 25px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    font-family: Georgia, serif;
+    margin-right: 10px;
+}
+
+.submit-button:hover {
+    background-color: #5a4232;
+}
+
+.submit-button:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+}
+
+.reset-button {
+    background-color: #f0f0f0;
+    color: #333;
+    border: 1px solid #ddd;
+    padding: 12px 25px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    font-family: Georgia, serif;
+}
+
+.reset-button:hover {
+    background-color: #e3e3e3;
+}
+
+/* Loading Indicator */
+.loading-indicator {
+    text-align: center;
+    padding: 20px;
+}
+
+.spinner {
+    display: inline-block;
+    width: 50px;
+    height: 50px;
+    border: 5px solid #f3f3f3;
+    border-top: 5px solid #6b4f3e;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 10px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Results Styles */
+.appraisal-result-container {
+    padding: 20px;
+    font-family: Georgia, serif;
+}
+
+.appraisal-header {
+    border-bottom: 2px solid #6b4f3e;
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+    position: relative;
+}
+
+.appraisal-header h2 {
+    color: #6b4f3e;
+    font-size: 24px;
+    margin: 0;
+}
+
+.appraisal-header .date {
+    position: absolute;
+    top: 0;
+    right: 0;
+    color: #777;
+    font-style: italic;
+}
+
+.appraisal-content {
+    line-height: 1.6;
+    color: #333;
+}
+
+.appraisal-content h1,
+.appraisal-content h2,
+.appraisal-content h3 {
+    color: #6b4f3e;
+}
+
+.appraisal-content sup {
+    color: #6b4f3e;
+    font-weight: bold;
+}
+
+.appraisal-actions {
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid #ddd;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.action-button {
+    background-color: #f0f0f0;
+    color: #333;
+    border: 1px solid #ddd;
+    padding: 8px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-family: Georgia, serif;
+}
+
+.action-button:hover {
+    background-color: #e3e3e3;
+}
+
+.print-button {
+    background-color: #6b4f3e;
+    color: white;
+}
+
+.print-button:hover {
+    background-color: #5a4232;
+}
+
+.export-dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+.export-options {
+    display: none;
+    position: absolute;
+    background-color: #fff;
+    min-width: 160px;
+    box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+    z-index: 1;
+    border-radius: 5px;
+    overflow: hidden;
+}
+
+.export-options.show {
+    display: block;
+}
+
+.export-option {
+    color: #333;
+    padding: 12px 16px;
+    text-decoration: none;
+    display: block;
+}
+
+.export-option:hover {
+    background-color: #f1f1f1;
+}
+
+/* Responsive Styles */
+@media screen and (max-width: 768px) {
+    .appraisal-actions {
+        flex-direction: column;
+    }
+    
+    .export-options {
+        position: static;
+        box-shadow: none;
+        border: 1px solid #ddd;
+        margin-top: 5px;
+    }
+}
+
+/* Print Styles */
+@media print {
+    .expert-appraiser-container {
+        box-shadow: none;
+        padding: 0;
+    }
+    
+    .appraisal-actions {
+        display: none;
+    }
+}
