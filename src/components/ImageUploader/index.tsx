@@ -1,9 +1,8 @@
 
-import { useClipboardImage } from "@/hooks/useClipboardImage";
+import { useState } from "react";
 import { ImageIcon, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { useState } from "react";
 import { showNotification } from "@/utils/notifications";
 
 interface ImageUploaderProps {
@@ -12,7 +11,6 @@ interface ImageUploaderProps {
 
 export const ImageUploader = ({ onImageSelect }: ImageUploaderProps) => {
   const [isDragging, setIsDragging] = useState(false);
-  const { handlePaste } = useClipboardImage();
 
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -66,7 +64,7 @@ export const ImageUploader = ({ onImageSelect }: ImageUploaderProps) => {
     >
       <div className="flex flex-col items-center justify-center gap-4">
         <ImageIcon className="h-12 w-12 text-muted-foreground" />
-        <div className="text-center">
+        <div className="text-center font-playfair">
           <p className="text-sm text-muted-foreground mb-2">
             Drag and drop an image here, or click to select
           </p>
