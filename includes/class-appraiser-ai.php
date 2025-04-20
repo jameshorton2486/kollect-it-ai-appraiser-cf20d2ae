@@ -19,46 +19,56 @@ class Appraiser_AI {
      * Handle the appraisal generation via AJAX
      */
     public function generate_appraisal() {
-        // Check nonce
+        // Check nonce for security
         if (!check_ajax_referer('expert_appraiser_nonce', 'nonce', false)) {
-            wp_send_json_error(array('message' => 'Invalid security token.'));
+            wp_send_json_error(array('message' => 'Security check failed. Please refresh the page and try again.'));
         }
         
         // Get parameters
-        $image_data = sanitize_text_field($_POST['image']);
-        $template_id = sanitize_text_field($_POST['template_id']);
+        $image_data = isset($_POST['image']) ? sanitize_text_field($_POST['image']) : '';
+        $template_id = isset($_POST['template_id']) ? sanitize_text_field($_POST['template_id']) : 'standard';
+        $title = isset($_POST['title']) ? sanitize_text_field($_POST['title']) : '';
+        $description = isset($_POST['description']) ? sanitize_textarea_field($_POST['description']) : '';
         
-        // Get API key
+        // Validate image data
+        if (empty($image_data)) {
+            wp_send_json_error(array('message' => 'No image data provided.'));
+        }
+        
+        // Get API key securely
         $api_key = $this->get_api_key();
         
         if (!$api_key) {
-            wp_send_json_error(array('message' => 'API key not configured.'));
+            wp_send_json_error(array('message' => 'API key not configured. Please add your OpenAI API key in the settings.'));
         }
         
-        // Process image data if needed
-        $image_data = str_replace('data:image/jpeg;base64,', '', $image_data);
-        $image_data = str_replace('data:image/png;base64,', '', $image_data);
+        // Process image data
+        $image_data = $this->clean_image_data($image_data);
         
         // Get prompt template
-        $prompt_templates = $this->get_prompt_templates();
-        $template = $prompt_templates['standard']; // Default
+        $prompt = $this->get_prompt_template($template_id);
         
-        foreach ($prompt_templates as $id => $prompt) {
-            if ($id === $template_id) {
-                $template = $prompt;
-                break;
-            }
+        // Add title and description to prompt if provided
+        if (!empty($title) || !empty($description)) {
+            $prompt = $this->customize_prompt($prompt, $title, $description);
         }
         
         // Call OpenAI API
-        $response = $this->call_openai_api($image_data, $api_key, $template);
+        $response = $this->call_openai_api($image_data, $api_key, $prompt);
         
         if (is_wp_error($response)) {
-            wp_send_json_error(array('message' => $response->get_error_message()));
+            wp_send_json_error(array(
+                'message' => $response->get_error_message(),
+                'code' => $response->get_error_code()
+            ));
         }
         
+        // Log successful appraisal (for admin metrics)
+        $this->log_appraisal_request($template_id, !empty($response['metadata']) ? $response['metadata'] : array());
+        
         wp_send_json_success(array(
-            'appraisalText' => $response['appraisalText']
+            'appraisalText' => $response['appraisalText'],
+            'metadata' => !empty($response['metadata']) ? $response['metadata'] : null
         ));
     }
     
@@ -68,26 +78,36 @@ class Appraiser_AI {
     public function save_appraisal() {
         // Check nonce
         if (!check_ajax_referer('expert_appraiser_nonce', 'nonce', false)) {
-            wp_send_json_error(array('message' => 'Invalid security token.'));
+            wp_send_json_error(array('message' => 'Security check failed. Please refresh the page and try again.'));
         }
         
         // Get parameters
-        $title = sanitize_text_field($_POST['title']);
-        $description = sanitize_textarea_field($_POST['description']);
-        $image_data = sanitize_text_field($_POST['image']);
-        $appraisal_text = sanitize_textarea_field($_POST['appraisal']);
-        $template_id = sanitize_text_field($_POST['template_id']);
+        $title = isset($_POST['title']) ? sanitize_text_field($_POST['title']) : 'Unnamed Appraisal';
+        $description = isset($_POST['description']) ? sanitize_textarea_field($_POST['description']) : '';
+        $image_data = isset($_POST['image']) ? sanitize_text_field($_POST['image']) : '';
+        $appraisal_text = isset($_POST['appraisal']) ? wp_kses_post($_POST['appraisal']) : '';
+        $template_id = isset($_POST['template_id']) ? sanitize_text_field($_POST['template_id']) : 'standard';
+        
+        // Validate appraisal text
+        if (empty($appraisal_text)) {
+            wp_send_json_error(array('message' => 'No appraisal content to save.'));
+        }
         
         // Prepare data for saving
-        $data = array(
-            'title' => $title,
-            'description' => $description,
-            'appraisal_text' => $appraisal_text,
-            'template_id' => $template_id
+        $post_data = array(
+            'post_title' => $title,
+            'post_content' => $appraisal_text,
+            'post_excerpt' => $description,
+            'post_status' => 'publish',
+            'post_type' => 'appraisal',
+            'meta_input' => array(
+                '_appraisal_template' => $template_id,
+                '_appraisal_date' => current_time('mysql'),
+            )
         );
         
-        // Save appraisal to database
-        $post_id = kollect_it_save_appraisal($data);
+        // Insert post
+        $post_id = wp_insert_post($post_data);
         
         if (is_wp_error($post_id)) {
             wp_send_json_error(array('message' => $post_id->get_error_message()));
@@ -96,12 +116,18 @@ class Appraiser_AI {
         
         // Save image as attachment if provided
         if (!empty($image_data)) {
-            $this->save_image_attachment($post_id, $image_data);
+            $attachment_id = $this->save_image_attachment($post_id, $image_data);
+            
+            if (is_wp_error($attachment_id)) {
+                // Continue even if image saving fails, just log the error
+                error_log('Error saving appraisal image: ' . $attachment_id->get_error_message());
+            }
         }
         
         wp_send_json_success(array(
             'message' => 'Appraisal saved successfully.',
-            'post_id' => $post_id
+            'post_id' => $post_id,
+            'view_url' => get_permalink($post_id)
         ));
     }
     
@@ -111,7 +137,37 @@ class Appraiser_AI {
     private function get_api_key() {
         global $wpdb;
         $table_name = $wpdb->prefix . 'expert_appraiser_api_keys';
-        return $wpdb->get_var("SELECT api_key FROM $table_name ORDER BY id DESC LIMIT 1");
+        
+        // Get API key with error handling
+        $api_key = $wpdb->get_var("SELECT api_key FROM $table_name ORDER BY id DESC LIMIT 1");
+        
+        // Check for database errors
+        if ($wpdb->last_error) {
+            error_log('Database error retrieving API key: ' . $wpdb->last_error);
+            return false;
+        }
+        
+        return $api_key;
+    }
+    
+    /**
+     * Clean image data - remove data URL prefix if present
+     */
+    private function clean_image_data($image_data) {
+        // Remove data URL prefix if present
+        if (strpos($image_data, 'data:image/jpeg;base64,') === 0) {
+            return substr($image_data, strlen('data:image/jpeg;base64,'));
+        } elseif (strpos($image_data, 'data:image/png;base64,') === 0) {
+            return substr($image_data, strlen('data:image/png;base64,'));
+        } elseif (strpos($image_data, 'data:image/') === 0) {
+            // Handle any image type
+            $start = strpos($image_data, 'base64,');
+            if ($start !== false) {
+                return substr($image_data, $start + 7);
+            }
+        }
+        
+        return $image_data;
     }
     
     /**
@@ -123,21 +179,41 @@ class Appraiser_AI {
         $upload_url = $upload_dir['url'];
         
         // Process image data
-        $image_data_decoded = base64_decode(str_replace('data:image/jpeg;base64,', '', $image_data));
-        $filename = 'appraisal-image-' . $post_id . '.jpg';
+        $image_data = $this->clean_image_data($image_data);
+        $image_data_decoded = base64_decode($image_data);
+        
+        if (!$image_data_decoded) {
+            return new WP_Error('invalid_image', 'Invalid image data');
+        }
+        
+        // Create unique filename
+        $filename = 'appraisal-' . $post_id . '-' . time() . '.jpg';
         $file_path = $upload_path . '/' . $filename;
         
-        file_put_contents($file_path, $image_data_decoded);
+        // Write file to disk
+        $result = file_put_contents($file_path, $image_data_decoded);
         
+        if (!$result) {
+            return new WP_Error('file_save_failed', 'Failed to save image file');
+        }
+        
+        // Prepare attachment data
         $attachment = array(
             'post_mime_type' => 'image/jpeg',
-            'post_title' => 'Appraisal Image ' . $post_id,
+            'post_title' => sanitize_file_name($filename),
             'post_content' => '',
             'post_status' => 'inherit',
             'guid' => $upload_url . '/' . $filename
         );
         
+        // Insert attachment
         $attachment_id = wp_insert_attachment($attachment, $file_path, $post_id);
+        
+        if (is_wp_error($attachment_id)) {
+            return $attachment_id;
+        }
+        
+        // Generate attachment metadata
         require_once(ABSPATH . 'wp-admin/includes/image.php');
         $attachment_data = wp_generate_attachment_metadata($attachment_id, $file_path);
         wp_update_attachment_metadata($attachment_id, $attachment_data);
@@ -149,12 +225,52 @@ class Appraiser_AI {
     }
     
     /**
+     * Get prompt template
+     */
+    private function get_prompt_template($template_id) {
+        $prompt_file = EXPERT_APPRAISER_PLUGIN_DIR . 'prompts/expert-appraisal.txt';
+        
+        if (file_exists($prompt_file)) {
+            $standard_prompt = file_get_contents($prompt_file);
+        } else {
+            // Default prompt if file doesn't exist
+            $standard_prompt = 'You are an expert appraiser with over 30 years of experience appraising antiques, collectibles, and art. Please provide a detailed appraisal for the item in this image.';
+        }
+        
+        // Get prompt templates
+        $templates = include EXPERT_APPRAISER_PLUGIN_DIR . 'includes/prompt-templates.php';
+        
+        // Return the requested template or fall back to standard
+        return isset($templates[$template_id]) ? $templates[$template_id] : $standard_prompt;
+    }
+    
+    /**
+     * Customize prompt with title and description
+     */
+    private function customize_prompt($prompt, $title, $description) {
+        if (!empty($title) || !empty($description)) {
+            $prompt .= "\n\nAdditional Item Information:";
+            
+            if (!empty($title)) {
+                $prompt .= "\nTitle: " . $title;
+            }
+            
+            if (!empty($description)) {
+                $prompt .= "\nDescription: " . $description;
+            }
+        }
+        
+        return $prompt;
+    }
+    
+    /**
      * Call the OpenAI API
      */
     private function call_openai_api($image_data, $api_key, $prompt_text) {
         // Get model from settings
         $model = get_option('expert_appraiser_openai_model', 'gpt-4o-mini');
         
+        // Set up the API request
         $args = array(
             'headers' => array(
                 'Authorization' => 'Bearer ' . $api_key,
@@ -181,58 +297,71 @@ class Appraiser_AI {
                 ),
                 'max_tokens' => 4000
             )),
-            'timeout' => 60
+            'timeout' => 60  // 60-second timeout
         );
         
+        // Make the request
         $response = wp_remote_post('https://api.openai.com/v1/chat/completions', $args);
         
+        // Check for errors
         if (is_wp_error($response)) {
             return $response;
         }
         
-        $body = json_decode(wp_remote_retrieve_body($response), true);
+        // Get response code
+        $response_code = wp_remote_retrieve_response_code($response);
         
-        if (isset($body['error'])) {
-            return new WP_Error('api_error', $body['error']['message']);
+        if ($response_code !== 200) {
+            $body = json_decode(wp_remote_retrieve_body($response), true);
+            $error_message = isset($body['error']['message']) ? $body['error']['message'] : 'Unknown API error';
+            
+            return new WP_Error(
+                'api_error_' . $response_code,
+                $error_message,
+                array('status' => $response_code)
+            );
         }
         
+        // Process the response
+        $body = json_decode(wp_remote_retrieve_body($response), true);
+        
+        if (!isset($body['choices'][0]['message']['content'])) {
+            return new WP_Error('invalid_response', 'Invalid response from OpenAI API');
+        }
+        
+        // Return the appraisal text and metadata
         return array(
-            'appraisalText' => $body['choices'][0]['message']['content']
+            'appraisalText' => $body['choices'][0]['message']['content'],
+            'metadata' => array(
+                'model' => $model,
+                'promptTokens' => isset($body['usage']['prompt_tokens']) ? $body['usage']['prompt_tokens'] : null,
+                'completionTokens' => isset($body['usage']['completion_tokens']) ? $body['usage']['completion_tokens'] : null,
+                'totalTokens' => isset($body['usage']['total_tokens']) ? $body['usage']['total_tokens'] : null
+            )
         );
     }
     
     /**
-     * Get prompt templates
+     * Log appraisal request for admin metrics
      */
-    private function get_prompt_templates() {
-        $prompt_file = EXPERT_APPRAISER_PLUGIN_DIR . 'prompts/expert-appraisal.txt';
+    private function log_appraisal_request($template_id, $metadata = array()) {
+        // Get existing log
+        $log = get_option('expert_appraiser_usage_log', array());
         
-        if (file_exists($prompt_file)) {
-            $standard_prompt = file_get_contents($prompt_file);
-        } else {
-            // Default prompt if file doesn't exist
-            $standard_prompt = 'You are an expert appraiser with over 30 years of experience appraising antiques, collectibles, and art.
-            
-Please provide a detailed and comprehensive appraisal for the item in this image, including:
-
-1. What the item is - full identification with specific details
-2. The estimated era, period, or date of creation
-3. Materials and construction techniques used
-4. Condition assessment
-5. Historical significance or background of the item type
-6. Current market value estimate (provide a range if appropriate)
-7. Any notable features that affect the valuation
-8. Comparable items that have recently sold with their prices
-
-Format your response with clear section headings for readability.';
+        // Add new entry
+        $log[] = array(
+            'date' => current_time('mysql'),
+            'template' => $template_id,
+            'model' => isset($metadata['model']) ? $metadata['model'] : 'unknown',
+            'tokens' => isset($metadata['totalTokens']) ? $metadata['totalTokens'] : 0
+        );
+        
+        // Limit log size to last 100 entries
+        if (count($log) > 100) {
+            $log = array_slice($log, -100);
         }
         
-        // Define templates
-        return array(
-            'standard' => $standard_prompt,
-            'antique' => 'You are an expert antiques appraiser with 35 years of experience. Provide a detailed appraisal for this antique item, including identification, age, materials, condition, provenance if identifiable, historical context, and current fair market value range. Include comparables from recent auctions or sales.',
-            'art' => 'You are a fine art appraiser with expertise in all periods and mediums. Analyze this artwork including: artist identification if possible, medium, period/style, composition analysis, condition, artistic significance, provenance if evident, and a current market valuation range. Include auction comparables if relevant.',
-            'collectible' => 'You are an expert collectibles appraiser specializing in memorabilia, toys, coins, stamps, and other collectible items. Provide a detailed assessment of this collectible including: precise identification, era/date, manufacturer if relevant, rarity, condition using standard grading terminology, collector demand, recent comparable sales, and current market value.'
-        );
+        // Update log
+        update_option('expert_appraiser_usage_log', $log);
     }
 }
