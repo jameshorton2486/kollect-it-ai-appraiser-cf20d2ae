@@ -1,6 +1,6 @@
 
 import { Button } from "@/components/ui/button";
-import { CloudUpload, Wand2, Save } from "lucide-react";
+import { CloudUpload, Wand2, Save, LoaderCircle } from "lucide-react";
 
 interface ControlPanelProps {
   onPaste: () => void;
@@ -8,6 +8,7 @@ interface ControlPanelProps {
   onSave: () => void;
   imageExists: boolean;
   appraisalExists: boolean;
+  isGenerating?: boolean;
 }
 
 export const ControlPanel = ({
@@ -15,7 +16,8 @@ export const ControlPanel = ({
   onGenerate,
   onSave,
   imageExists,
-  appraisalExists
+  appraisalExists,
+  isGenerating = false
 }: ControlPanelProps) => {
   return (
     <div className="flex flex-wrap gap-3">
@@ -29,10 +31,14 @@ export const ControlPanel = ({
       
       <Button 
         onClick={onGenerate}
-        disabled={!imageExists}
+        disabled={!imageExists || isGenerating}
       >
-        <Wand2 className="mr-2" />
-        Generate Appraisal
+        {isGenerating ? (
+          <LoaderCircle className="mr-2 animate-spin" />
+        ) : (
+          <Wand2 className="mr-2" />
+        )}
+        {isGenerating ? 'Generating...' : 'Generate Appraisal'}
       </Button>
       
       <Button 
