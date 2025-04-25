@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { ImageUploader } from "@/components/ImageUploader";
 import { Card } from "@/components/ui/card";
@@ -33,7 +32,7 @@ export const PhotoProcessor = () => {
       
       <div className="mt-6">
         {activeTab === 'upload' ? (
-          <ImageUploader maxImages={15} />
+          <ImageUploader />
         ) : (
           <Card className="p-6 space-y-4">
             <h2 className="text-xl font-semibold">How It Works</h2>

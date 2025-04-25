@@ -6,11 +6,11 @@ import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { ImagePreview } from "@/components/ImagePreview";
 import { showNotification } from "@/utils/notifications";
-import { getImageMetadata, optimizeImage } from "@/utils/imageProcessing";
+import { getImageMetadata, optimizeImage, removeBackground, dataURLtoBlob } from "@/utils/imageProcessing";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
 
-interface ImageUploaderProps {
+export interface ImageUploaderProps {
   onImageSelect?: (imageData: string) => void;
   onAppraisalComplete?: (result: string) => void;
   maxImages?: number;
