@@ -6,9 +6,11 @@ import { Upload } from "lucide-react";
 interface ImageUploaderProps {
   onImageSelect: (imageData: string) => void;
   onAppraisalComplete: (result: string) => void;
+  onImagesProcessed?: (images: Array<{id: string, processed: string, name: string}>) => void;
+  maxImages?: number;
 }
 
-export const ImageUploader = ({ onImageSelect, onAppraisalComplete }: ImageUploaderProps) => {
+export const ImageUploader = ({ onImageSelect, onAppraisalComplete, onImagesProcessed, maxImages = 15 }: ImageUploaderProps) => {
   const [isDragging, setIsDragging] = useState(false);
 
   const handleDrop = useCallback((e: React.DragEvent) => {

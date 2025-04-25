@@ -51,7 +51,6 @@ export const PhotoProcessor = () => {
       <div className="mt-6">
         {activeTab === 'upload' ? (
           <ImageUploader 
-            maxImages={15} 
             onImagesProcessed={handleImagesProcessed} 
           />
         ) : activeTab === 'generate' ? (
