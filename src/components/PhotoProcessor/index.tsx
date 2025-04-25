@@ -1,10 +1,21 @@
+
 import { useState } from "react";
 import { ImageUploader } from "@/components/ImageUploader";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { AIContentGenerator } from "@/components/AIContentGenerator";
 
 export const PhotoProcessor = () => {
-  const [activeTab, setActiveTab] = useState<'upload' | 'about'>('upload');
+  const [activeTab, setActiveTab] = useState<'upload' | 'generate' | 'about'>('upload');
+  const [processedImages, setProcessedImages] = useState<Array<{id: string, processed: string, name: string}>>([]);
+
+  const handleImagesProcessed = (images: Array<{id: string, processed: string, name: string}>) => {
+    setProcessedImages(images);
+    if (images.length > 0) {
+      // Automatically switch to generate tab when images are processed
+      setActiveTab('generate');
+    }
+  };
 
   return (
     <div className="max-w-6xl mx-auto p-4 md:p-6 space-y-8">
@@ -23,6 +34,13 @@ export const PhotoProcessor = () => {
           Upload & Process
         </button>
         <button
+          className={`py-3 px-4 ${activeTab === 'generate' ? 'border-b-2 border-primary font-medium' : 'text-muted-foreground'}`}
+          onClick={() => setActiveTab('generate')}
+          disabled={processedImages.length === 0}
+        >
+          Generate Content
+        </button>
+        <button
           className={`py-3 px-4 ${activeTab === 'about' ? 'border-b-2 border-primary font-medium' : 'text-muted-foreground'}`}
           onClick={() => setActiveTab('about')}
         >
@@ -32,7 +50,12 @@ export const PhotoProcessor = () => {
       
       <div className="mt-6">
         {activeTab === 'upload' ? (
-          <ImageUploader />
+          <ImageUploader 
+            maxImages={15} 
+            onImagesProcessed={handleImagesProcessed} 
+          />
+        ) : activeTab === 'generate' ? (
+          <AIContentGenerator images={processedImages} />
         ) : (
           <Card className="p-6 space-y-4">
             <h2 className="text-xl font-semibold">How It Works</h2>
@@ -46,6 +69,7 @@ export const PhotoProcessor = () => {
                 <li>Converting to web-friendly formats (WebP or JPEG)</li>
                 <li>Optimizing file sizes for faster loading</li>
                 <li>Batch downloading all processed images</li>
+                <li>Generating AI product titles, descriptions, and pricing</li>
               </ul>
             </div>
             
@@ -56,8 +80,9 @@ export const PhotoProcessor = () => {
                 <li>Add your Remove.bg API key for background removal (optional)</li>
                 <li>Click "Process Images" to optimize your photos</li>
                 <li>Review the processed images</li>
-                <li>Click "Download All" to get a ZIP file with all your processed images</li>
-                <li>Upload the images to your WordPress media library</li>
+                <li>Generate AI content based on your product images</li>
+                <li>Edit content if needed and download everything</li>
+                <li>Upload to your WordPress media library and product listings</li>
               </ol>
             </div>
             
@@ -66,6 +91,9 @@ export const PhotoProcessor = () => {
               <p className="text-sm">
                 For background removal, you need an API key from <a href="https://www.remove.bg/" target="_blank" rel="noopener noreferrer" className="text-primary underline">Remove.bg</a>. 
                 Without an API key, images will still be resized and optimized, but backgrounds won't be removed.
+              </p>
+              <p className="text-sm mt-2">
+                For AI content generation, you need an OpenAI API key. The system uses GPT-4 to analyze your product images and generate relevant content.
               </p>
             </div>
           </Card>

@@ -1,5 +1,4 @@
-
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { ImageIcon, Upload, X, Download, Image as ImageLucide } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -13,6 +12,7 @@ import { saveAs } from "file-saver";
 export interface ImageUploaderProps {
   onImageSelect?: (imageData: string) => void;
   onAppraisalComplete?: (result: string) => void;
+  onImagesProcessed?: (images: Array<{id: string, processed: string, name: string}>) => void;
   maxImages?: number;
   autoProcess?: boolean;
 }
@@ -30,6 +30,7 @@ interface UploadedImage {
 export const ImageUploader = ({ 
   onImageSelect, 
   onAppraisalComplete, 
+  onImagesProcessed,
   maxImages = 15, 
   autoProcess = false 
 }: ImageUploaderProps) => {
@@ -37,6 +38,22 @@ export const ImageUploader = ({
   const [images, setImages] = useState<UploadedImage[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [apiKey, setApiKey] = useState<string>('');
+
+  useEffect(() => {
+    if (onImagesProcessed && images.length > 0) {
+      const processedImages = images
+        .filter(img => img.status === 'done' && img.processed)
+        .map(img => ({ 
+          id: img.id, 
+          processed: img.processed!, 
+          name: img.name 
+        }));
+      
+      if (processedImages.length > 0) {
+        onImagesProcessed(processedImages);
+      }
+    }
+  }, [images, onImagesProcessed]);
 
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -50,23 +67,18 @@ export const ImageUploader = ({
 
   const processImage = async (image: UploadedImage) => {
     try {
-      // Update status to processing
       setImages(prev => prev.map(img => 
         img.id === image.id ? { ...img, status: 'processing', progress: 30 } : img
       ));
 
-      // Step 1: Optimize the image
       const optimized = await optimizeImage(image.data, 1200);
       
       setImages(prev => prev.map(img => 
         img.id === image.id ? { ...img, progress: 60 } : img
       ));
 
-      // Step 2: Remove background (this would integrate with Remove.bg or PhotoRoom API)
-      // For now, we'll skip the actual API call and just use the optimized image
-      const processed = optimized; // This would be replaced with the API response
+      const processed = optimized;
       
-      // Update the image with processed data
       setImages(prev => prev.map(img => 
         img.id === image.id ? { 
           ...img, 
@@ -110,22 +122,18 @@ export const ImageUploader = ({
   const handleImageFiles = useCallback(async (files: File[]) => {
     if (!files.length) return;
     
-    // Filter out non-image files
     const imageFiles = Array.from(files).filter(file => file.type.startsWith('image/'));
     
-    // Check if we'd exceed the max image count
     if (images.length + imageFiles.length > maxImages) {
       showNotification(`You can only upload up to ${maxImages} images.`, "error");
       return;
     }
 
-    // Process each file
     const newImages: UploadedImage[] = [];
     
     for (const file of imageFiles) {
       const reader = new FileReader();
       
-      // Use a Promise to handle the FileReader async behavior
       const imageData = await new Promise<string>((resolve) => {
         reader.onload = () => resolve(reader.result as string);
         reader.readAsDataURL(file);
@@ -141,10 +149,8 @@ export const ImageUploader = ({
       });
     }
     
-    // Add the new images
     setImages(prev => [...prev, ...newImages]);
     
-    // Update progress for all new images
     setTimeout(() => {
       setImages(prev => 
         prev.map(img => 
@@ -154,13 +160,11 @@ export const ImageUploader = ({
         )
       );
       
-      // If autoProcess is true, process the images automatically
       if (autoProcess) {
         processAllImages();
       }
     }, 500);
 
-    // If there's only one image and onImageSelect is provided, call it
     if (imageFiles.length === 1 && onImageSelect) {
       onImageSelect(newImages[0].data);
     }
@@ -180,7 +184,6 @@ export const ImageUploader = ({
     if (!e.target.files?.length) return;
     const files = Array.from(e.target.files);
     handleImageFiles(files);
-    // Reset the input so the same file can be selected again
     e.target.value = '';
   }, [handleImageFiles]);
 
@@ -198,22 +201,17 @@ export const ImageUploader = ({
     try {
       const zip = new JSZip();
       
-      // Add each processed image to the zip
       processedImages.forEach((img, index) => {
-        // Convert data URL to blob
         const imageData = img.processed!.split(',')[1];
         const mimeType = img.processed!.split(',')[0].split(':')[1].split(';')[0];
         const extension = mimeType === 'image/webp' ? 'webp' : 'jpg';
         
-        // Create formatted filename (product-image-01.webp)
         const paddedIndex = String(index + 1).padStart(2, '0');
         const fileName = `product-image-${paddedIndex}.${extension}`;
         
-        // Add to zip
         zip.file(fileName, imageData, { base64: true });
       });
       
-      // Generate and download the zip file
       const content = await zip.generateAsync({ type: "blob" });
       saveAs(content, "processed-images.zip");
       
@@ -226,7 +224,6 @@ export const ImageUploader = ({
 
   return (
     <div className="space-y-6">
-      {/* API Key Input */}
       <div className="flex flex-col gap-2">
         <label htmlFor="api-key" className="font-medium text-sm">
           Remove.bg API Key (optional)
@@ -244,7 +241,6 @@ export const ImageUploader = ({
         </p>
       </div>
       
-      {/* Upload Zone */}
       <Card
         className={`p-6 border-2 border-dashed transition-colors ${
           isDragging ? 'border-primary bg-primary/10' : 'border-muted'
@@ -282,7 +278,6 @@ export const ImageUploader = ({
         </div>
       </Card>
       
-      {/* Image Preview Grid */}
       {images.length > 0 && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
@@ -330,7 +325,6 @@ export const ImageUploader = ({
                   </Button>
                 </div>
                 
-                {/* Show either the original or processed image */}
                 <div className="aspect-square relative rounded-md overflow-hidden border border-border">
                   <img
                     src={image.status === 'done' && image.processed ? image.processed : image.data}
@@ -338,7 +332,6 @@ export const ImageUploader = ({
                     className="w-full h-full object-contain bg-white"
                   />
                   
-                  {/* Status overlay */}
                   {image.status === 'uploading' && image.progress < 100 && (
                     <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50">
                       <div className="w-4/5">
@@ -363,7 +356,6 @@ export const ImageUploader = ({
                   )}
                 </div>
                 
-                {/* Image name and status */}
                 <div className="mt-2">
                   <p className="text-sm font-medium truncate">{image.name}</p>
                   <p className="text-xs text-muted-foreground capitalize">
