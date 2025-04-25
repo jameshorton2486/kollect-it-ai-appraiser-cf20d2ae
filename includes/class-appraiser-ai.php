@@ -8,6 +8,9 @@ class Expert_Appraiser_AI {
     private $openai_client;
     
     public function __construct() {
+        // Load environment variables first
+        Appraiser_Env_Loader::load();
+        
         $api_key_manager = new Appraiser_API_Key_Manager();
         $api_key = $api_key_manager->get_api_key();
         $this->openai_client = new Appraiser_OpenAI_Client($api_key);

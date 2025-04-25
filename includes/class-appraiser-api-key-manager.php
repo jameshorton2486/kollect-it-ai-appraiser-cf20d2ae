@@ -1,4 +1,3 @@
-
 <?php
 class Appraiser_API_Key_Manager {
     private $table_name;
@@ -12,11 +11,20 @@ class Appraiser_API_Key_Manager {
     }
     
     /**
-     * Get the API key from the database
+     * Get the API key from environment or database
      * 
      * @return string|false API key if found, false otherwise
      */
     public function get_api_key() {
+        // First try to get from environment variable
+        $api_key = Appraiser_Env_Loader::get('OPENAI_API_KEY');
+        
+        // If found in env and valid format, return it
+        if ($api_key && preg_match('/^sk-/', $api_key)) {
+            return $api_key;
+        }
+        
+        // Otherwise try from database
         global $wpdb;
         
         // Check if table exists, create if not
@@ -26,7 +34,7 @@ class Appraiser_API_Key_Manager {
         
         if (!$encrypted_key) {
             if (WP_DEBUG) {
-                error_log('No API key found in the database');
+                error_log('No API key found in the database or environment');
             }
             return false;
         }

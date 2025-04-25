@@ -1,4 +1,3 @@
-
 <?php
 class Appraiser_OpenAI_Client {
     private $api_key;
@@ -8,10 +7,20 @@ class Appraiser_OpenAI_Client {
     private $api_endpoint = 'https://api.openai.com/v1/chat/completions';
     
     public function __construct($api_key = null) {
-        // If no API key provided, try to get it from settings
+        // If no API key provided, try to get it from environment or settings
         if (empty($api_key)) {
-            $api_key_manager = new Appraiser_API_Key_Manager();
-            $api_key = $api_key_manager->get_api_key();
+            // Load environment variables if not already loaded
+            if (!isset($_ENV['OPENAI_API_KEY'])) {
+                Appraiser_Env_Loader::load();
+            }
+            
+            // Try to get from environment first, then from database
+            $api_key = Appraiser_Env_Loader::get('OPENAI_API_KEY');
+            
+            if (empty($api_key)) {
+                $api_key_manager = new Appraiser_API_Key_Manager();
+                $api_key = $api_key_manager->get_api_key();
+            }
         }
         
         // Validate API key format (simple check)
@@ -105,7 +114,16 @@ class Appraiser_OpenAI_Client {
         
         // Handle authentication errors
         if ($response_code === 401) {
-            throw new Exception('Authentication error: Invalid API key or unauthorized access. Please check your OpenAI API key.');
+            $error_message = 'Authentication error: Invalid API key or unauthorized access.';
+            
+            // Add more specific guidance based on where the API key is coming from
+            if (Appraiser_Env_Loader::get('OPENAI_API_KEY')) {
+                $error_message .= ' Please check your OPENAI_API_KEY in your .env file.';
+            } else {
+                $error_message .= ' Please check your OpenAI API key in the plugin settings.';
+            }
+            
+            throw new Exception($error_message);
         }
         
         // Handle rate limiting
