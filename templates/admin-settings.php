@@ -10,6 +10,13 @@ if (!defined('ABSPATH')) {
         <h1><?php _e('Expert Appraiser Settings', 'expert-appraiser-ai'); ?></h1>
     </div>
     
+    <?php 
+    // Include the .env API key form
+    if (function_exists('expert_appraiser_display_env_api_key_form')) {
+        expert_appraiser_display_env_api_key_form();
+    }
+    ?>
+    
     <div class="expert-appraiser-admin-card">
         <h2><?php _e('API Configuration', 'expert-appraiser-ai'); ?></h2>
         <p><?php _e('Configure your OpenAI API key to enable image appraisals.', 'expert-appraiser-ai'); ?></p>

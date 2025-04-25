@@ -7,13 +7,11 @@ class Appraiser_OpenAI_Client {
     private $api_endpoint = 'https://api.openai.com/v1/chat/completions';
     
     public function __construct($api_key = null) {
-        // If no API key provided, try to get it from environment or settings
+        // Load environment variables if not already loaded
+        Appraiser_Env_Loader::load();
+        
+        // If no API key provided, try to get it from environment
         if (empty($api_key)) {
-            // Load environment variables if not already loaded
-            if (!isset($_ENV['OPENAI_API_KEY'])) {
-                Appraiser_Env_Loader::load();
-            }
-            
             // Try to get from environment first, then from database
             $api_key = Appraiser_Env_Loader::get('OPENAI_API_KEY');
             

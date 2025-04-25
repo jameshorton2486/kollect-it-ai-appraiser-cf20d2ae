@@ -68,6 +68,25 @@ class Appraiser_API_Key_Manager {
     }
     
     /**
+     * Store API key in .env file
+     * 
+     * @param string $api_key API key to store
+     * @return bool True on success, false on failure
+     */
+    public function store_api_key_in_env($api_key) {
+        // Basic validation
+        if (empty($api_key) || !preg_match('/^sk-/', $api_key)) {
+            if (WP_DEBUG) {
+                error_log('Attempted to store invalid API key format');
+            }
+            return false;
+        }
+        
+        // Update the .env file
+        return Appraiser_Env_Loader::update_env_file(['OPENAI_API_KEY' => $api_key]);
+    }
+    
+    /**
      * Validate API key format
      *
      * @param string $api_key API key to validate
