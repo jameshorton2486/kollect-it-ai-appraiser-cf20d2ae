@@ -1,3 +1,4 @@
+
 <?php
 /**
  * Helper functions for Expert Appraiser AI
@@ -31,6 +32,10 @@ function expert_appraiser_markdown_to_html($markdown) {
     // Convert lists
     $html = preg_replace('/^- (.*?)$/m', '<li>$1</li>', $html);
     $html = preg_replace('/(<li>.*?<\/li>\n)+/s', '<ul>$0</ul>', $html);
+    
+    // Convert numbered lists
+    $html = preg_replace('/^\d+\. (.*?)$/m', '<li>$1</li>', $html);
+    $html = preg_replace('/(<li>.*?<\/li>\n)+/s', '<ol>$0</ol>', $html);
     
     // Convert paragraphs
     $html = '<p>' . str_replace("\n\n", '</p><p>', $html) . '</p>';
@@ -95,4 +100,32 @@ function expert_appraiser_user_reached_limit($user_id = 0) {
     $limit = get_option('appraiser_usage_limit', 10);
     
     return $count >= $limit;
+}
+
+/**
+ * Validate OpenAI API key format
+ * 
+ * @param string $api_key The API key to validate
+ * @return bool True if valid, false otherwise
+ */
+function expert_appraiser_is_valid_api_key_format($api_key) {
+    return !empty($api_key) && preg_match('/^sk-/', $api_key);
+}
+
+/**
+ * Log API errors for troubleshooting
+ *
+ * @param string $message Error message
+ * @param mixed $data Additional data for context
+ */
+function expert_appraiser_log_error($message, $data = null) {
+    if (WP_DEBUG) {
+        $log_message = '[Expert Appraiser] ' . $message;
+        
+        if ($data !== null) {
+            $log_message .= ' - ' . (is_string($data) ? $data : json_encode($data));
+        }
+        
+        error_log($log_message);
+    }
 }

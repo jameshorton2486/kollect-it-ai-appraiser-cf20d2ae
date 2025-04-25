@@ -5,19 +5,21 @@
  */
 class Expert_Appraiser_AI {
     private $api_endpoint = 'https://api.openai.com/v1/chat/completions';
-    private $api_key_manager;
+    private $openai_client;
     
     public function __construct() {
-        $this->api_key_manager = new Appraiser_API_Key_Manager();
+        $api_key_manager = new Appraiser_API_Key_Manager();
+        $api_key = $api_key_manager->get_api_key();
+        $this->openai_client = new Appraiser_OpenAI_Client($api_key);
     }
     
     /**
      * Generate an appraisal based on the provided image
      */
     public function generate_appraisal($image_data, $user_notes = '') {
-        $api_key = $this->api_key_manager->get_api_key();
-        if (!$api_key) {
-            return new WP_Error('no_api_key', __('OpenAI API key is not configured', 'expert-appraiser-ai'));
+        // Check if we have a valid API key first
+        if (!$this->openai_client->has_valid_api_key()) {
+            return new WP_Error('no_api_key', __('OpenAI API key is not configured or is invalid', 'expert-appraiser-ai'));
         }
         
         // Clean the base64 image data
@@ -32,72 +34,19 @@ class Expert_Appraiser_AI {
             $prompt .= "\n\nAdditional notes about this item: " . $user_notes;
         }
         
-        // Prepare the API request with the correct model
-        $payload = array(
-            'model' => 'gpt-4o-mini', // Using the recommended faster model
-            'messages' => array(
-                array(
-                    'role' => 'user',
-                    'content' => array(
-                        array(
-                            'type' => 'text',
-                            'text' => $prompt
-                        ),
-                        array(
-                            'type' => 'image_url',
-                            'image_url' => array(
-                                'url' => 'data:image/jpeg;base64,' . $image_data
-                            )
-                        )
-                    )
-                )
-            ),
-            'max_tokens' => 4000
-        );
+        // Use our enhanced client to make the API request
+        $result = $this->openai_client->generate_appraisal($image_data, $prompt);
         
-        // Make the API request with proper error handling
-        $response = wp_remote_post($this->api_endpoint, array(
-            'headers' => array(
-                'Authorization' => 'Bearer ' . $api_key,
-                'Content-Type' => 'application/json'
-            ),
-            'body' => json_encode($payload),
-            'timeout' => 60
-        ));
-        
-        if (is_wp_error($response)) {
-            return $response;
+        if (is_wp_error($result)) {
+            return $result;
         }
-        
-        $response_code = wp_remote_retrieve_response_code($response);
-        if ($response_code !== 200) {
-            $body = json_decode(wp_remote_retrieve_body($response), true);
-            return new WP_Error(
-                'api_error',
-                isset($body['error']['message']) ? $body['error']['message'] : __('Unknown API error', 'expert-appraiser-ai'),
-                array('status' => $response_code)
-            );
-        }
-        
-        $body = json_decode(wp_remote_retrieve_body($response), true);
-        if (!isset($body['choices'][0]['message']['content'])) {
-            return new WP_Error('invalid_response', __('Invalid response from OpenAI', 'expert-appraiser-ai'));
-        }
-        
-        $appraisal_text = $body['choices'][0]['message']['content'];
         
         // Save the appraisal if user is logged in
         if (is_user_logged_in()) {
-            $this->save_appraisal($appraisal_text, $image_data);
+            $this->save_appraisal($result['appraisalText'], $image_data);
         }
         
-        return array(
-            'appraisalText' => $appraisal_text,
-            'metadata' => array(
-                'model' => $payload['model'],
-                'totalTokens' => isset($body['usage']['total_tokens']) ? $body['usage']['total_tokens'] : null,
-            )
-        );
+        return $result;
     }
     
     /**
@@ -111,6 +60,9 @@ class Expert_Appraiser_AI {
         return 'You are an expert appraiser. Please analyze this image and provide a comprehensive professional appraisal.';
     }
     
+    /**
+     * Clean base64 image data by removing data URL prefix if present
+     */
     private function clean_base64_image($image_data) {
         if (strpos($image_data, 'data:image') === 0) {
             $image_data = preg_replace('/^data:image\/\w+;base64,/', '', $image_data);
@@ -118,6 +70,9 @@ class Expert_Appraiser_AI {
         return $image_data;
     }
     
+    /**
+     * Save appraisal to database
+     */
     private function save_appraisal($appraisal_text, $image_data) {
         global $wpdb;
         $table_name = $wpdb->prefix . 'expert_appraisals';
@@ -150,5 +105,16 @@ class Expert_Appraiser_AI {
             ),
             array('%d', '%s', '%s', '%s', '%s')
         );
+    }
+    
+    /**
+     * Test if an API key is valid
+     * 
+     * @param string $api_key API key to test
+     * @return bool|WP_Error True if valid, WP_Error otherwise
+     */
+    public function test_api_key($api_key) {
+        $client = new Appraiser_OpenAI_Client($api_key);
+        return $client->test_api_key();
     }
 }

@@ -6,12 +6,37 @@ class Appraiser_OpenAI_Client {
     private $max_retries = 3;
     private $retry_delay = 1; // seconds
     
-    public function __construct($api_key) {
-        $this->api_key = $api_key;
+    public function __construct($api_key = null) {
+        // If no API key provided, try to get it from settings
+        if (empty($api_key)) {
+            $api_key_manager = new Appraiser_API_Key_Manager();
+            $api_key = $api_key_manager->get_api_key();
+        }
+        
+        // Validate API key format (simple check)
+        if (empty($api_key) || !preg_match('/^sk-/', $api_key)) {
+            $this->api_key = null;
+        } else {
+            $this->api_key = trim($api_key);
+        }
+        
+        // Get the selected model from options
         $this->model = get_option('expert_appraiser_openai_model', 'gpt-4o-mini');
     }
     
+    public function has_valid_api_key() {
+        return !empty($this->api_key) && preg_match('/^sk-/', $this->api_key);
+    }
+    
     public function generate_appraisal($image_data, $prompt_text) {
+        // Check for valid API key first
+        if (!$this->has_valid_api_key()) {
+            return new WP_Error(
+                'invalid_api_key',
+                'Invalid or missing OpenAI API key. Please check your API key in the settings.'
+            );
+        }
+        
         $retry_count = 0;
         
         while ($retry_count < $this->max_retries) {
@@ -69,6 +94,11 @@ class Appraiser_OpenAI_Client {
         $response_code = wp_remote_retrieve_response_code($response);
         $body = json_decode(wp_remote_retrieve_body($response), true);
         
+        // Handle authentication errors
+        if ($response_code === 401) {
+            throw new Exception('Authentication error: Invalid API key or unauthorized access. Please check your OpenAI API key.');
+        }
+        
         // Handle rate limiting
         if ($response_code === 429) {
             $retry_after = wp_remote_retrieve_header($response, 'retry-after');
@@ -99,6 +129,50 @@ class Appraiser_OpenAI_Client {
                 'timestamp' => current_time('mysql')
             )
         );
+    }
+    
+    public function test_api_key() {
+        if (!$this->has_valid_api_key()) {
+            return new WP_Error('invalid_api_key', 'Invalid or missing API key format');
+        }
+        
+        $args = array(
+            'headers' => array(
+                'Authorization' => 'Bearer ' . $this->api_key,
+                'Content-Type' => 'application/json'
+            ),
+            'body' => json_encode(array(
+                'model' => 'gpt-4o-mini',
+                'messages' => array(
+                    array(
+                        'role' => 'user',
+                        'content' => 'Hello'
+                    )
+                ),
+                'max_tokens' => 5
+            )),
+            'timeout' => 15
+        );
+        
+        $response = wp_remote_post('https://api.openai.com/v1/chat/completions', $args);
+        
+        if (is_wp_error($response)) {
+            return $response;
+        }
+        
+        $response_code = wp_remote_retrieve_response_code($response);
+        
+        if ($response_code === 401) {
+            return new WP_Error('unauthorized', 'Invalid API key or unauthorized access');
+        }
+        
+        if ($response_code !== 200) {
+            $body = json_decode(wp_remote_retrieve_body($response), true);
+            $error_message = isset($body['error']['message']) ? $body['error']['message'] : 'Unknown API error';
+            return new WP_Error('api_error', $error_message);
+        }
+        
+        return true; // API key is valid
     }
     
     private function format_appraisal_text($text) {

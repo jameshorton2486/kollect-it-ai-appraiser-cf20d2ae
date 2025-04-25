@@ -17,6 +17,17 @@
                 const apiKey = $('#expert-appraiser-api-key').val();
                 const submitButton = $('#expert-appraiser-api-key-submit');
                 
+                // Basic validation
+                if (!apiKey || !apiKey.trim()) {
+                    showNotice('error', 'API key cannot be empty.');
+                    return;
+                }
+                
+                if (!apiKey.startsWith('sk-')) {
+                    showNotice('error', 'Invalid API key format. OpenAI API keys should start with "sk-".');
+                    return;
+                }
+                
                 submitButton.val('Saving...').prop('disabled', true);
                 
                 $.ajax({
@@ -51,6 +62,17 @@
                 
                 const apiKey = $('#expert-appraiser-api-key').val();
                 
+                // Basic validation
+                if (!apiKey || !apiKey.trim()) {
+                    showNotice('error', 'Please enter an API key to test.');
+                    return;
+                }
+                
+                if (!apiKey.startsWith('sk-')) {
+                    showNotice('error', 'Invalid API key format. OpenAI API keys should start with "sk-".');
+                    return;
+                }
+                
                 $(this).text('Testing...').prop('disabled', true);
                 
                 $.ajax({
@@ -67,7 +89,7 @@
                         if (response.success) {
                             showNotice('success', response.data.message);
                         } else {
-                            showNotice('error', response.data.message);
+                            showNotice('error', response.data.message || 'API test failed. Please check your key.');
                         }
                     },
                     error: function() {

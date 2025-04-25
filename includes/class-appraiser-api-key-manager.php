@@ -10,6 +10,11 @@ class Appraiser_API_Key_Manager {
         $this->encryption_key = wp_salt('auth');
     }
     
+    /**
+     * Get the API key from the database
+     * 
+     * @return string|false API key if found, false otherwise
+     */
     public function get_api_key() {
         global $wpdb;
         
@@ -26,15 +31,35 @@ class Appraiser_API_Key_Manager {
         
         // Decrypt the key
         try {
-            return $this->decrypt_key($encrypted_key);
+            $decrypted_key = $this->decrypt_key($encrypted_key);
+            
+            // Basic validation of the key format
+            if (empty($decrypted_key) || !preg_match('/^sk-/', $decrypted_key)) {
+                error_log('Retrieved API key has invalid format');
+                return false;
+            }
+            
+            return $decrypted_key;
         } catch (Exception $e) {
             error_log('Error decrypting API key: ' . $e->getMessage());
             return false;
         }
     }
     
+    /**
+     * Store the API key in the database
+     * 
+     * @param string $api_key API key to store
+     * @return bool True on success, false on failure
+     */
     public function store_api_key($api_key) {
         global $wpdb;
+        
+        // Basic validation
+        if (empty($api_key) || !preg_match('/^sk-/', $api_key)) {
+            error_log('Attempted to store invalid API key format');
+            return false;
+        }
         
         // Encrypt the key before storing
         try {
@@ -43,6 +68,9 @@ class Appraiser_API_Key_Manager {
             error_log('Error encrypting API key: ' . $e->getMessage());
             return false;
         }
+        
+        // Check if table exists, create if not
+        $this->maybe_create_table();
         
         // Clear existing keys
         $wpdb->query("TRUNCATE TABLE {$this->table_name}");
@@ -54,9 +82,40 @@ class Appraiser_API_Key_Manager {
             array('%s')
         );
         
+        if ($result === false) {
+            error_log('Failed to insert API key: ' . $wpdb->last_error);
+        }
+        
         return $result !== false;
     }
     
+    /**
+     * Create the API keys table if it doesn't exist
+     */
+    private function maybe_create_table() {
+        global $wpdb;
+        
+        if ($wpdb->get_var("SHOW TABLES LIKE '{$this->table_name}'") != $this->table_name) {
+            $charset_collate = $wpdb->get_charset_collate();
+            
+            $sql = "CREATE TABLE {$this->table_name} (
+                id mediumint(9) NOT NULL AUTO_INCREMENT,
+                api_key text NOT NULL,
+                created_at datetime DEFAULT CURRENT_TIMESTAMP NOT NULL,
+                PRIMARY KEY  (id)
+            ) $charset_collate;";
+            
+            require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
+            dbDelta($sql);
+        }
+    }
+    
+    /**
+     * Encrypt an API key
+     * 
+     * @param string $key The API key to encrypt
+     * @return string The encrypted key
+     */
     private function encrypt_key($key) {
         if (!extension_loaded('openssl')) {
             throw new Exception('OpenSSL extension not loaded');
@@ -72,13 +131,27 @@ class Appraiser_API_Key_Manager {
         return base64_encode($iv . $encrypted);
     }
     
+    /**
+     * Decrypt an API key
+     * 
+     * @param string $encrypted_data The encrypted API key
+     * @return string The decrypted key
+     */
     private function decrypt_key($encrypted_data) {
         if (!extension_loaded('openssl')) {
             throw new Exception('OpenSSL extension not loaded');
         }
         
         $data = base64_decode($encrypted_data);
+        if ($data === false) {
+            throw new Exception('Invalid base64 encoded data');
+        }
+        
         $iv_length = openssl_cipher_iv_length('aes-256-cbc');
+        if (strlen($data) <= $iv_length) {
+            throw new Exception('Encrypted data is too short');
+        }
+        
         $iv = substr($data, 0, $iv_length);
         $encrypted = substr($data, $iv_length);
         
@@ -89,5 +162,15 @@ class Appraiser_API_Key_Manager {
         }
         
         return $decrypted;
+    }
+    
+    /**
+     * Delete all stored API keys
+     * 
+     * @return bool True on success
+     */
+    public function delete_all_keys() {
+        global $wpdb;
+        return $wpdb->query("TRUNCATE TABLE {$this->table_name}") !== false;
     }
 }
