@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -40,7 +39,6 @@ export const AIContentGenerator = ({ images }: AIContentGeneratorProps) => {
   
   const { generateContent, isLoading } = useAIContentGenerator();
 
-  // Initialize products from images
   useEffect(() => {
     if (images?.length > 0) {
       const initialProducts = images.map(img => ({
@@ -73,7 +71,6 @@ export const AIContentGenerator = ({ images }: AIContentGeneratorProps) => {
     };
     
     try {
-      // Generate content for each product one by one
       const updatedProducts = [...products];
       
       for (let i = 0; i < updatedProducts.length; i++) {
@@ -170,28 +167,40 @@ export const AIContentGenerator = ({ images }: AIContentGeneratorProps) => {
     }));
   };
 
-  const downloadCSV = () => {
+  const downloadCSV = (format: 'simple' | 'advanced' = 'simple') => {
     try {
-      // Create CSV content
-      let csvContent = "Title,Description,Regular Price,Image\n";
+      let headers = format === 'simple' 
+        ? "post_title,post_content,regular_price,images\n"
+        : "post_title,post_content,regular_price,images,sku,categories,tags\n";
       
-      products.forEach(product => {
-        // Extract price value from range
+      products.forEach((product, index) => {
         const priceMatch = product.priceRange.match(/\$(\d+)/);
         const price = priceMatch ? priceMatch[1] : "";
         
-        // Escape quotes in text fields
         const escapedTitle = product.title.replace(/"/g, '""');
         const escapedDescription = product.description.replace(/"/g, '""');
         
-        csvContent += `"${escapedTitle}","${escapedDescription}",${price},${product.imageName}\n`;
+        let row = `"${escapedTitle}","${escapedDescription}",${price},${product.imageName}`;
+        
+        if (format === 'advanced') {
+          const sku = `PROD-${String(index + 1).padStart(3, '0')}`;
+          const tags = product.title
+            .split(' ')
+            .filter(word => word.length > 3)
+            .slice(0, 3)
+            .join(',');
+          
+          row += `,${sku},"Antiques","${tags}"`;
+        }
+        
+        headers += row + "\n";
       });
       
-      // Create a Blob with the CSV data
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      saveAs(blob, "products-upload-ready.csv");
+      const blob = new Blob([headers], { type: 'text/csv;charset=utf-8;' });
+      const filename = format === 'simple' ? "products-simple.csv" : "products-advanced.csv";
+      saveAs(blob, filename);
       
-      showNotification("CSV file downloaded successfully!", "success");
+      showNotification(`${format === 'simple' ? 'Simple' : 'Advanced'} CSV file downloaded successfully!`, "success");
     } catch (error) {
       showNotification(`Error downloading CSV: ${(error as Error).message}`, "error");
     }
@@ -201,20 +210,16 @@ export const AIContentGenerator = ({ images }: AIContentGeneratorProps) => {
     try {
       const zip = new JSZip();
       
-      // Add CSV file
       let csvContent = "Title,Description,Regular Price,Image,SKU,Categories,Tags\n";
       products.forEach((product, index) => {
         const escapedTitle = product.title.replace(/"/g, '""');
         const escapedDescription = product.description.replace(/"/g, '""');
         
-        // Extract price from price range
         const priceMatch = product.priceRange.match(/\$(\d+)/);
         const price = priceMatch ? priceMatch[1] : "";
         
-        // Generate SKU
         const sku = `PROD-${String(index + 1).padStart(3, '0')}`;
         
-        // Generate tags from the title
         const tags = product.title
           .split(' ')
           .filter(word => word.length > 3)
@@ -225,9 +230,7 @@ export const AIContentGenerator = ({ images }: AIContentGeneratorProps) => {
       });
       zip.file("products-upload-ready.csv", csvContent);
       
-      // Add images
       products.forEach((product, index) => {
-        // Extract base64 image data
         const imageData = product.imageUrl.split(',')[1];
         const paddedIndex = String(index + 1).padStart(2, '0');
         const extension = product.imageUrl.includes('image/webp') ? 'webp' : 'jpg';
@@ -236,7 +239,6 @@ export const AIContentGenerator = ({ images }: AIContentGeneratorProps) => {
         zip.file(fileName, imageData, { base64: true });
       });
       
-      // Generate and download the zip
       const content = await zip.generateAsync({ type: "blob" });
       saveAs(content, "product-content-and-images.zip");
       
@@ -246,7 +248,6 @@ export const AIContentGenerator = ({ images }: AIContentGeneratorProps) => {
     }
   };
 
-  // Navigate to export tab
   const goToExportTab = () => {
     setActiveTab("export");
   };
@@ -262,7 +263,6 @@ export const AIContentGenerator = ({ images }: AIContentGeneratorProps) => {
         </TabsList>
         
         <TabsContent value="generate" className="space-y-6">
-          {/* API Key and Context Input */}
           <Card className="p-4">
             <CardHeader>
               <CardTitle>AI Content Generation Settings</CardTitle>
@@ -357,7 +357,6 @@ export const AIContentGenerator = ({ images }: AIContentGeneratorProps) => {
             </CardFooter>
           </Card>
           
-          {/* Product Content Cards */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {products.map((product) => (
               <Card key={product.id} className="overflow-hidden">
@@ -370,7 +369,6 @@ export const AIContentGenerator = ({ images }: AIContentGeneratorProps) => {
                 </div>
                 
                 <CardContent className="p-4 space-y-4">
-                  {/* Title */}
                   <div>
                     <div className="flex justify-between items-center">
                       <Label className="text-sm font-medium">Product Title</Label>
@@ -399,7 +397,6 @@ export const AIContentGenerator = ({ images }: AIContentGeneratorProps) => {
                     )}
                   </div>
                   
-                  {/* Description */}
                   <div>
                     <div className="flex justify-between items-center">
                       <Label className="text-sm font-medium">Product Description</Label>
@@ -429,7 +426,6 @@ export const AIContentGenerator = ({ images }: AIContentGeneratorProps) => {
                     )}
                   </div>
                   
-                  {/* Price Range */}
                   <div>
                     <div className="flex justify-between items-center">
                       <Label className="text-sm font-medium">Value Range</Label>

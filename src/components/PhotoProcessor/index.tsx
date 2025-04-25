@@ -92,7 +92,7 @@ export const PhotoProcessor = () => {
                 <li>Review the processed images</li>
                 <li>Generate AI content based on your product images</li>
                 <li>Edit content if needed and download everything</li>
-                <li>Export as a WooCommerce-ready CSV file</li>
+                <li>Export as a WooCommerce-ready CSV file (Simple or Advanced)</li>
                 <li>Upload to your WordPress media library and product listings</li>
               </ol>
             </div>

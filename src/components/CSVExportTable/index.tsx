@@ -4,6 +4,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Download, FileText } from "lucide-react";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
 import { saveAs } from "file-saver";
 import { showNotification } from "@/utils/notifications";
 
@@ -22,11 +24,11 @@ interface CSVExportTableProps {
 
 export const CSVExportTable = ({ products, onDownload }: CSVExportTableProps) => {
   const [editableProducts, setEditableProducts] = useState<ProductData[]>(products);
-  const [showAdditionalColumns, setShowAdditionalColumns] = useState(false);
+  const [exportFormat, setExportFormat] = useState<'simple' | 'advanced'>('simple');
   const [categoryField, setCategoryField] = useState("Antiques");
+  const [includeSKU, setIncludeSKU] = useState(true);
   const [includeCategories, setIncludeCategories] = useState(true);
   const [includeTags, setIncludeTags] = useState(true);
-  const [includeSKU, setIncludeSKU] = useState(true);
 
   // Update products when props change
   React.useEffect(() => {
@@ -44,19 +46,21 @@ export const CSVExportTable = ({ products, onDownload }: CSVExportTableProps) =>
 
   const handleExportCSV = () => {
     try {
-      // Create headers based on selected fields
-      let headers = ["Title", "Description", "Regular Price", "Image"];
+      // Create headers based on selected format
+      let headers = ["post_title", "post_content", "regular_price", "images"];
       
-      if (includeSKU) {
-        headers.push("SKU");
-      }
-      
-      if (includeCategories) {
-        headers.push("Categories");
-      }
-      
-      if (includeTags) {
-        headers.push("Tags");
+      if (exportFormat === 'advanced') {
+        if (includeSKU) {
+          headers.push("sku");
+        }
+        
+        if (includeCategories) {
+          headers.push("categories");
+        }
+        
+        if (includeTags) {
+          headers.push("tags");
+        }
       }
       
       // Create CSV content with headers
@@ -80,24 +84,26 @@ export const CSVExportTable = ({ products, onDownload }: CSVExportTableProps) =>
           product.imageName
         ];
         
-        // Add optional fields if selected
-        if (includeSKU) {
-          const sku = `PROD-${String(index + 1).padStart(3, '0')}`;
-          row.push(sku);
-        }
-        
-        if (includeCategories) {
-          row.push(`"${categoryField}"`);
-        }
-        
-        if (includeTags) {
-          // Generate tags from the title
-          const tags = product.title
-            .split(' ')
-            .filter(word => word.length > 3)
-            .slice(0, 3)
-            .join(',');
-          row.push(`"${tags}"`);
+        // Add optional fields if advanced format
+        if (exportFormat === 'advanced') {
+          if (includeSKU) {
+            const sku = `PROD-${String(index + 1).padStart(3, '0')}`;
+            row.push(sku);
+          }
+          
+          if (includeCategories) {
+            row.push(`"${categoryField}"`);
+          }
+          
+          if (includeTags) {
+            // Generate tags from the title
+            const tags = product.title
+              .split(' ')
+              .filter(word => word.length > 3)
+              .slice(0, 3)
+              .join(',');
+            row.push(`"${tags}"`);
+          }
         }
         
         csvContent += row.join(",") + "\n";
@@ -105,9 +111,10 @@ export const CSVExportTable = ({ products, onDownload }: CSVExportTableProps) =>
       
       // Create and download the CSV file
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      saveAs(blob, "products-upload-ready.csv");
+      const filename = exportFormat === 'simple' ? "products-simple.csv" : "products-advanced.csv";
+      saveAs(blob, filename);
       
-      showNotification("CSV file exported successfully!", "success");
+      showNotification(`${exportFormat === 'simple' ? 'Simple' : 'Advanced'} CSV file exported successfully!`, "success");
       onDownload();
     } catch (error) {
       showNotification(`Error exporting CSV: ${(error as Error).message}`, "error");
@@ -131,81 +138,87 @@ export const CSVExportTable = ({ products, onDownload }: CSVExportTableProps) =>
             Preview and edit your product data before exporting
           </p>
         </div>
-        
-        <div className="flex flex-wrap gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowAdditionalColumns(!showAdditionalColumns)}
-          >
-            {showAdditionalColumns ? "Hide" : "Show"} Optional Fields
-          </Button>
-          
-          <Button 
-            variant="default" 
-            size="sm"
-            onClick={handleExportCSV}
-          >
-            <FileText className="h-4 w-4 mr-2" />
-            Export to CSV
-          </Button>
-        </div>
       </div>
       
-      {showAdditionalColumns && (
-        <div className="bg-muted p-4 rounded-md mb-4">
-          <h4 className="font-medium mb-3">Optional Fields</h4>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                id="include-sku"
-                checked={includeSKU}
-                onChange={(e) => setIncludeSKU(e.target.checked)}
-                className="rounded border-gray-300"
-              />
-              <label htmlFor="include-sku" className="text-sm">Include SKUs</label>
-            </div>
-            
-            <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                id="include-categories"
-                checked={includeCategories}
-                onChange={(e) => setIncludeCategories(e.target.checked)}
-                className="rounded border-gray-300"
-              />
-              <label htmlFor="include-categories" className="text-sm">Include Categories</label>
-            </div>
-            
-            <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                id="include-tags"
-                checked={includeTags}
-                onChange={(e) => setIncludeTags(e.target.checked)}
-                className="rounded border-gray-300"
-              />
-              <label htmlFor="include-tags" className="text-sm">Include Tags</label>
-            </div>
+      <div className="bg-muted p-4 rounded-md mb-4">
+        <h4 className="font-medium mb-3">CSV Export Format</h4>
+        
+        <RadioGroup 
+          value={exportFormat} 
+          onValueChange={(value) => setExportFormat(value as 'simple' | 'advanced')}
+          className="flex flex-col space-y-3"
+        >
+          <div className="flex items-center space-x-2">
+            <RadioGroupItem value="simple" id="simple" />
+            <Label htmlFor="simple" className="flex items-center">
+              <FileText className="h-4 w-4 mr-2" />
+              Simple CSV (Title, Description, Price, Image)
+            </Label>
           </div>
           
-          {includeCategories && (
-            <div className="mt-3">
-              <label htmlFor="category-field" className="text-sm block mb-1">
-                Default Category
-              </label>
-              <Input
-                id="category-field"
-                value={categoryField}
-                onChange={(e) => setCategoryField(e.target.value)}
-                placeholder="Default category"
-                className="max-w-xs"
-              />
+          <div className="flex items-center space-x-2">
+            <RadioGroupItem value="advanced" id="advanced" />
+            <Label htmlFor="advanced" className="flex items-center">
+              <FileText className="h-4 w-4 mr-2" />
+              Advanced CSV (All Fields)
+            </Label>
+          </div>
+        </RadioGroup>
+        
+        {exportFormat === 'advanced' && (
+          <div className="mt-4 border-t border-border pt-3 space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="include-sku"
+                  checked={includeSKU}
+                  onChange={(e) => setIncludeSKU(e.target.checked)}
+                  className="rounded border-gray-300"
+                />
+                <label htmlFor="include-sku" className="text-sm">Include SKUs</label>
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="include-categories"
+                  checked={includeCategories}
+                  onChange={(e) => setIncludeCategories(e.target.checked)}
+                  className="rounded border-gray-300"
+                />
+                <label htmlFor="include-categories" className="text-sm">Include Categories</label>
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="include-tags"
+                  checked={includeTags}
+                  onChange={(e) => setIncludeTags(e.target.checked)}
+                  className="rounded border-gray-300"
+                />
+                <label htmlFor="include-tags" className="text-sm">Include Tags</label>
+              </div>
             </div>
-          )}
-        </div>
-      )}
+            
+            {includeCategories && (
+              <div>
+                <label htmlFor="category-field" className="text-sm block mb-1">
+                  Default Category
+                </label>
+                <Input
+                  id="category-field"
+                  value={categoryField}
+                  onChange={(e) => setCategoryField(e.target.value)}
+                  placeholder="Default category"
+                  className="max-w-xs"
+                />
+              </div>
+            )}
+          </div>
+        )}
+      </div>
       
       <div className="overflow-x-auto border rounded-md">
         <Table>
@@ -215,9 +228,9 @@ export const CSVExportTable = ({ products, onDownload }: CSVExportTableProps) =>
               <TableHead>Description (excerpt)</TableHead>
               <TableHead>Regular Price</TableHead>
               <TableHead>Image</TableHead>
-              {includeSKU && <TableHead>SKU</TableHead>}
-              {includeCategories && <TableHead>Categories</TableHead>}
-              {includeTags && <TableHead>Tags</TableHead>}
+              {exportFormat === 'advanced' && includeSKU && <TableHead>SKU</TableHead>}
+              {exportFormat === 'advanced' && includeCategories && <TableHead>Categories</TableHead>}
+              {exportFormat === 'advanced' && includeTags && <TableHead>Tags</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -262,9 +275,9 @@ export const CSVExportTable = ({ products, onDownload }: CSVExportTableProps) =>
                     />
                   </TableCell>
                   <TableCell>{product.imageName}</TableCell>
-                  {includeSKU && <TableCell>{`PROD-${String(index + 1).padStart(3, '0')}`}</TableCell>}
-                  {includeCategories && <TableCell>{categoryField}</TableCell>}
-                  {includeTags && <TableCell>{tags}</TableCell>}
+                  {exportFormat === 'advanced' && includeSKU && <TableCell>{`PROD-${String(index + 1).padStart(3, '0')}`}</TableCell>}
+                  {exportFormat === 'advanced' && includeCategories && <TableCell>{categoryField}</TableCell>}
+                  {exportFormat === 'advanced' && includeTags && <TableCell>{tags}</TableCell>}
                 </TableRow>
               );
             })}
@@ -278,7 +291,7 @@ export const CSVExportTable = ({ products, onDownload }: CSVExportTableProps) =>
           className="px-4"
         >
           <Download className="h-4 w-4 mr-2" />
-          Download CSV
+          Download {exportFormat === 'simple' ? 'Simple' : 'Advanced'} CSV
         </Button>
       </div>
     </div>
