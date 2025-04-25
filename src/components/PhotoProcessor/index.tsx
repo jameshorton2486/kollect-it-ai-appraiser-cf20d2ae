@@ -17,6 +17,15 @@ export const PhotoProcessor = () => {
     }
   };
 
+  // Empty placeholder functions to satisfy the ImageUploaderProps interface
+  const handleImageSelect = (imageData: string) => {
+    // This function is needed for the interface but not used in this component
+  };
+
+  const handleAppraisalComplete = (result: string) => {
+    // This function is needed for the interface but not used in this component
+  };
+
   return (
     <div className="max-w-6xl mx-auto p-4 md:p-6 space-y-8">
       <div className="text-center">
@@ -51,7 +60,9 @@ export const PhotoProcessor = () => {
       <div className="mt-6">
         {activeTab === 'upload' ? (
           <ImageUploader 
-            onImagesProcessed={handleImagesProcessed} 
+            onImageSelect={handleImageSelect}
+            onAppraisalComplete={handleAppraisalComplete}
+            onImagesProcessed={handleImagesProcessed}
           />
         ) : activeTab === 'generate' ? (
           <AIContentGenerator images={processedImages} />
@@ -81,6 +92,7 @@ export const PhotoProcessor = () => {
                 <li>Review the processed images</li>
                 <li>Generate AI content based on your product images</li>
                 <li>Edit content if needed and download everything</li>
+                <li>Export as a WooCommerce-ready CSV file</li>
                 <li>Upload to your WordPress media library and product listings</li>
               </ol>
             </div>
