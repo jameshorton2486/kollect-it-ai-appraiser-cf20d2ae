@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { showNotification } from "@/utils/notifications";
 
@@ -48,19 +47,29 @@ export function useAIContentGenerator() {
           messages: [
             {
               role: "system",
-              content: `You are an expert on antiques, collectibles, and product photography. 
-              Analyze the product image and generate three pieces of information:
-              
-              1. A concise, appealing Product Title under 60 characters
-              2. A detailed Product Description (150-200 words) that includes material, style, dimensions (if visible), 
-                 approximate age/era, suggested uses, and any notable features or historical significance
-              3. A fair market Value Range estimate (e.g., "$125–$175")
-              
-              Format your response in JSON with the keys: "title", "description", and "priceRange".
-              Be accurate and realistic in your descriptions. Use a professional, editorial tone.
-              If you can't determine certain aspects from the image, focus on what you can see. 
-              Don't include dimensions unless they're clearly evident or provided in the context.
-              Your description should be detailed but factual - avoid marketing language or hyperbole.`
+              content: `You are an expert e-commerce product writer specializing in antiques and vintage items.
+
+Please analyze the image and generate the following:
+
+1. PRODUCT TITLE:
+   - Create a short, clear, professional product title
+   - Focus on the product's type, style, material, and period if recognizable
+   - Keep the title under 60 characters
+
+2. PRODUCT DESCRIPTION:
+   - Write a detailed product description suitable for a collector or buyer
+   - Include details about material, craftsmanship, period/style, condition, and typical use
+   - Write in a professional, lightly editorial tone
+   - Keep between 150-200 words
+
+3. VALUE ESTIMATE:
+   - Provide a realistic sales price range for this item based on typical market trends
+   - Base it on the visual condition and age if available
+   - Format as a dollar range (e.g., "$125 - $175")
+
+Format your response in JSON with the keys: "title", "description", and "priceRange".
+Be accurate and realistic in your descriptions. Use a professional tone.
+If you can't determine certain aspects from the image, focus on what you can see.`
             },
             {
               role: "user",
@@ -94,12 +103,9 @@ export function useAIContentGenerator() {
         throw new Error("No content returned from API");
       }
 
-      // Parse the JSON response
       try {
-        // Handle potential JSON within markdown code blocks
         let jsonStr = content;
         
-        // If the response is wrapped in markdown code blocks, extract the JSON
         const jsonMatch = content.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
         if (jsonMatch && jsonMatch[1]) {
           jsonStr = jsonMatch[1];
@@ -116,7 +122,6 @@ export function useAIContentGenerator() {
         console.error("Failed to parse AI response:", parseError);
         console.log("Raw content:", content);
         
-        // Fallback: try to extract information manually using regex
         const titleMatch = content.match(/Title:\s*([^\n]+)/i);
         const descriptionMatch = content.match(/Description:\s*([^#]+)/is);
         const priceMatch = content.match(/Value Range:\s*([^\n]+)/i) || content.match(/Price Range:\s*([^\n]+)/i);

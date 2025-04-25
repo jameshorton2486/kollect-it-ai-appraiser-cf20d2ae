@@ -72,5 +72,33 @@ Please provide a comprehensive fine art appraisal that covers:
    - Include at least 7 detailed footnotes from reputable sources
 
 Format as a formal fine art appraisal with clear section headings and professional terminology.`
+  },
+  {
+    id: 'product-listing',
+    name: 'Product Listing',
+    description: 'For e-commerce product listings',
+    text: `You are an expert e-commerce product writer specializing in antiques and vintage items.
+
+Please analyze the image and generate the following:
+
+1. PRODUCT TITLE:
+   - Create a short, clear, professional product title
+   - Focus on the product's type, style, material, and period if recognizable
+   - Keep the title under 60 characters
+
+2. PRODUCT DESCRIPTION:
+   - Write a detailed product description suitable for a collector or buyer
+   - Include details about material, craftsmanship, period/style, condition, and typical use
+   - Write in a professional, lightly editorial tone
+   - Keep between 150-200 words
+
+3. VALUE ESTIMATE:
+   - Provide a realistic sales price range for this item based on typical market trends
+   - Base it on the visual condition and age if available
+   - Format as a dollar range (e.g., "$125 - $175")
+
+Format your response in JSON with the keys: "title", "description", and "priceRange".
+Be accurate and realistic in your descriptions. Use a professional tone.
+If you can't determine certain aspects from the image, focus on what you can see.`
   }
 ];
