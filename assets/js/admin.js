@@ -24,7 +24,7 @@
                 }
                 
                 if (!apiKey.startsWith('sk-')) {
-                    showNotice('error', 'Invalid API key format. OpenAI API keys should start with "sk-".');
+                    showNotice('error', 'Invalid API key format. OpenAI API keys should start with "sk-" followed by a string of characters.');
                     return;
                 }
                 
@@ -47,9 +47,20 @@
                             showNotice('error', response.data.message);
                         }
                     },
-                    error: function() {
+                    error: function(xhr) {
                         submitButton.val('Save API Key').prop('disabled', false);
-                        showNotice('error', 'An error occurred. Please try again.');
+                        let errorMessage = 'An error occurred. Please try again.';
+                        
+                        try {
+                            const response = JSON.parse(xhr.responseText);
+                            if (response && response.data && response.data.message) {
+                                errorMessage = response.data.message;
+                            }
+                        } catch(e) {
+                            console.error('Error parsing error response:', e);
+                        }
+                        
+                        showNotice('error', errorMessage);
                     }
                 });
             });
@@ -69,7 +80,7 @@
                 }
                 
                 if (!apiKey.startsWith('sk-')) {
-                    showNotice('error', 'Invalid API key format. OpenAI API keys should start with "sk-".');
+                    showNotice('error', 'Invalid API key format. OpenAI API keys should start with "sk-" followed by a string of characters.');
                     return;
                 }
                 
@@ -89,12 +100,28 @@
                         if (response.success) {
                             showNotice('success', response.data.message);
                         } else {
-                            showNotice('error', response.data.message || 'API test failed. Please check your key.');
+                            let errorMsg = response.data.message || 'API test failed. Please check your key.';
+                            // Add more context for 401 errors
+                            if (errorMsg.includes('unauthorized') || errorMsg.includes('Invalid API key')) {
+                                errorMsg += ' Make sure your OpenAI account is in good standing and has sufficient credits.';
+                            }
+                            showNotice('error', errorMsg);
                         }
                     },
-                    error: function() {
+                    error: function(xhr) {
                         testButton.text('Test API Key').prop('disabled', false);
-                        showNotice('error', 'An error occurred while testing the API key.');
+                        let errorMessage = 'An error occurred while testing the API key.';
+                        
+                        try {
+                            const response = JSON.parse(xhr.responseText);
+                            if (response && response.data && response.data.message) {
+                                errorMessage = response.data.message;
+                            }
+                        } catch(e) {
+                            console.error('Error parsing error response:', e);
+                        }
+                        
+                        showNotice('error', errorMessage);
                     }
                 });
             });
@@ -126,6 +153,26 @@
                     notice.remove();
                 });
             }, 5000);
+        }
+        
+        // Add a "Show/Hide" button for API key
+        if ($('#expert-appraiser-api-key').length) {
+            const apiKeyField = $('#expert-appraiser-api-key');
+            const toggleButton = $('<button type="button" class="button button-secondary" id="toggle-api-key">Show Key</button>');
+            
+            apiKeyField.after(toggleButton);
+            
+            toggleButton.on('click', function() {
+                const fieldType = apiKeyField.attr('type');
+                
+                if (fieldType === 'password') {
+                    apiKeyField.attr('type', 'text');
+                    toggleButton.text('Hide Key');
+                } else {
+                    apiKeyField.attr('type', 'password');
+                    toggleButton.text('Show Key');
+                }
+            });
         }
     });
 })(jQuery);

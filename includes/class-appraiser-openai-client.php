@@ -5,6 +5,7 @@ class Appraiser_OpenAI_Client {
     private $model;
     private $max_retries = 3;
     private $retry_delay = 1; // seconds
+    private $api_endpoint = 'https://api.openai.com/v1/chat/completions';
     
     public function __construct($api_key = null) {
         // If no API key provided, try to get it from settings
@@ -85,7 +86,7 @@ class Appraiser_OpenAI_Client {
             'timeout' => 60
         );
         
-        $response = wp_remote_post('https://api.openai.com/v1/chat/completions', $args);
+        $response = wp_remote_post($this->api_endpoint, $args);
         
         if (is_wp_error($response)) {
             throw new Exception($response->get_error_message());
@@ -93,6 +94,14 @@ class Appraiser_OpenAI_Client {
         
         $response_code = wp_remote_retrieve_response_code($response);
         $body = json_decode(wp_remote_retrieve_body($response), true);
+        
+        // Debug logging
+        if (WP_DEBUG) {
+            error_log('OpenAI API response code: ' . $response_code);
+            if ($response_code !== 200) {
+                error_log('OpenAI API error: ' . wp_json_encode($body));
+            }
+        }
         
         // Handle authentication errors
         if ($response_code === 401) {
@@ -154,20 +163,28 @@ class Appraiser_OpenAI_Client {
             'timeout' => 15
         );
         
-        $response = wp_remote_post('https://api.openai.com/v1/chat/completions', $args);
+        $response = wp_remote_post($this->api_endpoint, $args);
         
         if (is_wp_error($response)) {
             return $response;
         }
         
         $response_code = wp_remote_retrieve_response_code($response);
+        $body = json_decode(wp_remote_retrieve_body($response), true);
+        
+        // Debug logging
+        if (WP_DEBUG) {
+            error_log('OpenAI API test response code: ' . $response_code);
+            if ($response_code !== 200) {
+                error_log('OpenAI API test error: ' . wp_json_encode($body));
+            }
+        }
         
         if ($response_code === 401) {
-            return new WP_Error('unauthorized', 'Invalid API key or unauthorized access');
+            return new WP_Error('unauthorized', 'Invalid API key or unauthorized access. Check your OpenAI API key and billing status.');
         }
         
         if ($response_code !== 200) {
-            $body = json_decode(wp_remote_retrieve_body($response), true);
             $error_message = isset($body['error']['message']) ? $body['error']['message'] : 'Unknown API error';
             return new WP_Error('api_error', $error_message);
         }

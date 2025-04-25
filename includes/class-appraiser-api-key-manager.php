@@ -3,6 +3,7 @@
 class Appraiser_API_Key_Manager {
     private $table_name;
     private $encryption_key;
+    private $key_pattern = '/^sk-[a-zA-Z0-9]{32,}$/'; // More strict pattern for OpenAI keys
     
     public function __construct() {
         global $wpdb;
@@ -18,14 +19,22 @@ class Appraiser_API_Key_Manager {
     public function get_api_key() {
         global $wpdb;
         
+        // Check if table exists, create if not
+        $this->maybe_create_table();
+        
         $encrypted_key = $wpdb->get_var("SELECT api_key FROM {$this->table_name} ORDER BY id DESC LIMIT 1");
         
         if (!$encrypted_key) {
+            if (WP_DEBUG) {
+                error_log('No API key found in the database');
+            }
             return false;
         }
         
         if ($wpdb->last_error) {
-            error_log('Database error retrieving API key: ' . $wpdb->last_error);
+            if (WP_DEBUG) {
+                error_log('Database error retrieving API key: ' . $wpdb->last_error);
+            }
             return false;
         }
         
@@ -35,15 +44,29 @@ class Appraiser_API_Key_Manager {
             
             // Basic validation of the key format
             if (empty($decrypted_key) || !preg_match('/^sk-/', $decrypted_key)) {
-                error_log('Retrieved API key has invalid format');
+                if (WP_DEBUG) {
+                    error_log('Retrieved API key has invalid format');
+                }
                 return false;
             }
             
             return $decrypted_key;
         } catch (Exception $e) {
-            error_log('Error decrypting API key: ' . $e->getMessage());
+            if (WP_DEBUG) {
+                error_log('Error decrypting API key: ' . $e->getMessage());
+            }
             return false;
         }
+    }
+    
+    /**
+     * Validate API key format
+     *
+     * @param string $api_key API key to validate
+     * @return bool True if valid format, false otherwise
+     */
+    public function validate_key_format($api_key) {
+        return !empty($api_key) && preg_match('/^sk-/', $api_key);
     }
     
     /**
@@ -57,7 +80,9 @@ class Appraiser_API_Key_Manager {
         
         // Basic validation
         if (empty($api_key) || !preg_match('/^sk-/', $api_key)) {
-            error_log('Attempted to store invalid API key format');
+            if (WP_DEBUG) {
+                error_log('Attempted to store invalid API key format');
+            }
             return false;
         }
         
@@ -65,7 +90,9 @@ class Appraiser_API_Key_Manager {
         try {
             $encrypted_key = $this->encrypt_key($api_key);
         } catch (Exception $e) {
-            error_log('Error encrypting API key: ' . $e->getMessage());
+            if (WP_DEBUG) {
+                error_log('Error encrypting API key: ' . $e->getMessage());
+            }
             return false;
         }
         
@@ -83,7 +110,9 @@ class Appraiser_API_Key_Manager {
         );
         
         if ($result === false) {
-            error_log('Failed to insert API key: ' . $wpdb->last_error);
+            if (WP_DEBUG) {
+                error_log('Failed to insert API key: ' . $wpdb->last_error);
+            }
         }
         
         return $result !== false;
@@ -107,6 +136,10 @@ class Appraiser_API_Key_Manager {
             
             require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
             dbDelta($sql);
+            
+            if ($wpdb->last_error && WP_DEBUG) {
+                error_log('Error creating API keys table: ' . $wpdb->last_error);
+            }
         }
     }
     

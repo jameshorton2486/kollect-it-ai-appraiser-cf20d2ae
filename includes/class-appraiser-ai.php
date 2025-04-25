@@ -19,13 +19,16 @@ class Expert_Appraiser_AI {
     public function generate_appraisal($image_data, $user_notes = '') {
         // Check if we have a valid API key first
         if (!$this->openai_client->has_valid_api_key()) {
-            return new WP_Error('no_api_key', __('OpenAI API key is not configured or is invalid', 'expert-appraiser-ai'));
+            return new WP_Error(
+                'no_api_key', 
+                __('OpenAI API key is not configured or is invalid. Please check settings and ensure the API key begins with "sk-".', 'expert-appraiser-ai')
+            );
         }
         
         // Clean the base64 image data
         $image_data = $this->clean_base64_image($image_data);
         if (empty($image_data)) {
-            return new WP_Error('invalid_image', __('Invalid image data', 'expert-appraiser-ai'));
+            return new WP_Error('invalid_image', __('Invalid image data. Please upload a valid image.', 'expert-appraiser-ai'));
         }
         
         // Get the expert prompt
@@ -38,6 +41,10 @@ class Expert_Appraiser_AI {
         $result = $this->openai_client->generate_appraisal($image_data, $prompt);
         
         if (is_wp_error($result)) {
+            // Log the error for debugging
+            if (WP_DEBUG) {
+                error_log('OpenAI API Error: ' . $result->get_error_message());
+            }
             return $result;
         }
         
@@ -87,7 +94,23 @@ class Expert_Appraiser_AI {
         // Generate unique filename and save image
         $filename = 'appraisal-' . md5(uniqid() . time()) . '.jpg';
         $file_path = $appraisal_dir . '/' . $filename;
-        file_put_contents($file_path, base64_decode($image_data));
+        
+        // Check if image data is valid base64
+        $decoded = base64_decode($image_data, true);
+        if ($decoded === false) {
+            if (WP_DEBUG) {
+                error_log('Failed to decode image data for appraisal');
+            }
+            return false;
+        }
+        
+        $success = file_put_contents($file_path, $decoded);
+        if ($success === false) {
+            if (WP_DEBUG) {
+                error_log('Failed to save image file for appraisal');
+            }
+            return false;
+        }
         
         // Extract item name from appraisal text
         preg_match('/ITEM IDENTIFICATION[:\s]*(.+?)(?:\n|$)/i', $appraisal_text, $matches);
@@ -114,6 +137,15 @@ class Expert_Appraiser_AI {
      * @return bool|WP_Error True if valid, WP_Error otherwise
      */
     public function test_api_key($api_key) {
+        // Basic validation first
+        if (empty($api_key) || !preg_match('/^sk-/', $api_key)) {
+            return new WP_Error(
+                'invalid_api_key', 
+                __('Invalid API key format. OpenAI API keys should start with "sk-".', 'expert-appraiser-ai')
+            );
+        }
+        
+        // Create a temporary client with this key for testing
         $client = new Appraiser_OpenAI_Client($api_key);
         return $client->test_api_key();
     }
